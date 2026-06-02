@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimalist Language Tool</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#F5F5F7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <style>
         :root {
             --bg-color: #F5F5F7;
@@ -31,12 +35,164 @@
             flex-direction: column;
             min-height: 100vh;
             padding: 40px 20px;
+            overflow-x: hidden;
         }
 
         .container {
             max-width: 800px;
             margin: 0 auto;
             width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Review View */
+        #reviewView {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .review-card-container {
+            width: 100%;
+            max-width: 500px;
+            perspective: 1000px;
+            height: 400px;
+            cursor: pointer;
+        }
+
+        .review-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .review-card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .review-card-front, .review-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background: var(--card-color);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .review-card-back {
+            transform: rotateY(180deg);
+            overflow-y: auto;
+            justify-content: flex-start;
+        }
+
+        .review-card-front h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .review-card-back .translation-item {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F2F2F7;
+        }
+
+        .review-card-back .translation-item:last-child {
+            border-bottom: none;
+        }
+
+        .review-card-back .lang-label {
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .review-controls {
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-btn {
+            background: var(--card-color);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 100px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .review-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .review-progress {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Resume Prompt */
+        .resume-prompt {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 100px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            gap: 16px;
+            z-index: 100;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .resume-prompt button {
+            background: white;
+            color: var(--text-primary);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
         }
 
         /* Top Search Area */
@@ -361,31 +517,74 @@
 <body>
 
     <div class="container">
-        <!-- Top Search Area -->
-        <header class="search-container">
-            <input type="text" class="main-input" placeholder="输入中文、English 或 Français...">
-            <div class="mic-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                    <line x1="12" y1="19" x2="12" y2="23"></line>
-                    <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
+        <!-- Main View -->
+        <div id="mainView">
+            <!-- Top Search Area -->
+            <header class="search-container">
+                <input type="text" class="main-input" placeholder="输入中文、English 或 Français...">
+                <div class="mic-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </div>
+            </header>
+
+            <!-- Category Buttons -->
+            <nav class="mode-tags">
+                <button class="tag-btn active" onclick="this.classList.toggle('active')">口语</button>
+                <button class="tag-btn" onclick="this.classList.toggle('active')">书面</button>
+                <button class="tag-btn" onclick="this.classList.toggle('active')">礼貌</button>
+                <button class="tag-btn" onclick="this.classList.toggle('active')">随意</button>
+            </nav>
+
+            <!-- Result Cards Area -->
+            <main class="results-grid" id="resultsGrid">
+                <!-- 动态渲染生成 -->
+            </main>
+        </div>
+
+        <!-- Review View -->
+        <div id="reviewView">
+            <div class="review-header">
+                <button class="icon-btn" onclick="toggleReviewMode(false)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>返回</span>
+                </button>
+                <div class="review-progress" id="reviewProgress">1 / 20</div>
             </div>
-        </header>
+            
+            <div class="review-card-container" onclick="flipReviewCard()">
+                <div class="review-card-inner" id="reviewCardInner">
+                    <div class="review-card-front">
+                        <h2 id="reviewWord">Word</h2>
+                    </div>
+                    <div class="review-card-back" id="reviewDetails">
+                        <!-- Details filled by JS -->
+                    </div>
+                </div>
+            </div>
 
-        <!-- Category Buttons -->
-        <nav class="mode-tags">
-            <button class="tag-btn active" onclick="this.classList.toggle('active')">口语</button>
-            <button class="tag-btn" onclick="this.classList.toggle('active')">书面</button>
-            <button class="tag-btn" onclick="this.classList.toggle('active')">礼貌</button>
-            <button class="tag-btn" onclick="this.classList.toggle('active')">随意</button>
-        </nav>
-
-        <!-- Result Cards Area -->
-        <main class="results-grid" id="resultsGrid">
-            <!-- 动态渲染生成 -->
-        </main>
+            <div class="review-controls">
+                <button class="nav-btn" onclick="prevReviewWord(event)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    <span>上一个</span>
+                </button>
+                <button class="nav-btn" onclick="nextReviewWord(event)">
+                    <span>下一个</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
         <!-- Bottom Controls -->
         <footer class="bottom-controls">
@@ -396,13 +595,22 @@
                 </svg>
                 <span>设置</span>
             </button>
-            <div class="review-toggle">
+            <div class="review-toggle" onclick="toggleReviewMode(true)">
                 <span>进入复习模式</span>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
             </div>
         </footer>
+    </div>
+
+    <!-- Resume Prompt -->
+    <div class="resume-prompt" id="resumePrompt">
+        <span>发现上次复习中断，是否继续？</span>
+        <div style="display:flex; gap:8px;">
+            <button onclick="resumeReview(true)">继续</button>
+            <button onclick="resumeReview(false)" style="background:rgba(255,255,255,0.2); color:white;">重新开始</button>
+        </div>
     </div>
 
     <!-- Settings Modal -->
@@ -445,12 +653,144 @@
         ];
 
         let currentResultData = null; // Store last AI result for star logic
+        let reviewWords = [];
+        let currentReviewIndex = 0;
 
         // Initialization
         window.onload = () => {
             initResultCards();
             loadSettings();
+            checkResumeReview();
+            registerServiceWorker();
         };
+
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(() => console.log('Service Worker Registered'));
+            }
+        }
+
+        // Review Mode Logic
+        async function toggleReviewMode(show) {
+            const mainView = document.getElementById('mainView');
+            const reviewView = document.getElementById('reviewView');
+            const bottomControls = document.querySelector('.bottom-controls');
+
+            if (show) {
+                const words = await fetchNotionDatabase();
+                if (words.length === 0) {
+                    alert('词库为空或未配置 Notion，请先收藏单词。');
+                    return;
+                }
+                
+                // Shuffle and pick 20
+                reviewWords = words
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, 20)
+                    .map(item => ({
+                        word: item.properties.Word.title[0]?.plain_text || 'Unknown',
+                        translation: item.properties.Translation.rich_text[0]?.plain_text || '',
+                        example: item.properties.Example.rich_text[0]?.plain_text || '',
+                        scene: item.properties.Scene.select?.name || '常规'
+                    }));
+
+                mainView.style.display = 'none';
+                reviewView.style.display = 'flex';
+                bottomControls.style.display = 'none';
+                renderReviewCard();
+            } else {
+                mainView.style.display = 'block';
+                reviewView.style.display = 'none';
+                bottomControls.style.display = 'flex';
+                // Save progress
+                localStorage.setItem('review_checkpoint', JSON.stringify({
+                    index: currentReviewIndex,
+                    words: reviewWords,
+                    timestamp: Date.now()
+                }));
+            }
+        }
+
+        function renderReviewCard() {
+            const word = reviewWords[currentReviewIndex];
+            document.getElementById('reviewWord').innerText = word.word;
+            document.getElementById('reviewProgress').innerText = `${currentReviewIndex + 1} / ${reviewWords.length}`;
+            
+            const detailsHtml = `
+                <div class="translation-item">
+                    <span class="lang-label" style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">释义</span>
+                    <div style="font-size:1.1rem; font-weight:600;">${word.translation}</div>
+                </div>
+                <div class="translation-item">
+                    <span class="lang-label" style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">例句</span>
+                    <div style="font-size:0.95rem; color:var(--text-secondary);">${word.example}</div>
+                </div>
+                <div style="margin-top:auto; font-size:0.8rem; color:var(--text-secondary); opacity:0.6;">
+                    场景: ${word.scene}
+                </div>
+            `;
+            document.getElementById('reviewDetails').innerHTML = detailsHtml;
+            document.getElementById('reviewCardInner').classList.remove('flipped');
+            
+            // Save index
+            const checkpoint = JSON.parse(localStorage.getItem('review_checkpoint') || '{}');
+            checkpoint.index = currentReviewIndex;
+            localStorage.setItem('review_checkpoint', JSON.stringify(checkpoint));
+        }
+
+        function flipReviewCard() {
+            document.getElementById('reviewCardInner').classList.toggle('flipped');
+        }
+
+        function nextReviewWord(e) {
+            e.stopPropagation();
+            if (currentReviewIndex < reviewWords.length - 1) {
+                currentReviewIndex++;
+                renderReviewCard();
+            } else {
+                alert('恭喜，已完成本次复习！');
+                toggleReviewMode(false);
+            }
+        }
+
+        function prevReviewWord(e) {
+            e.stopPropagation();
+            if (currentReviewIndex > 0) {
+                currentReviewIndex--;
+                renderReviewCard();
+            }
+        }
+
+        function checkResumeReview() {
+            const checkpoint = JSON.parse(localStorage.getItem('review_checkpoint'));
+            if (checkpoint && checkpoint.words && checkpoint.words.length > 0) {
+                // Show prompt if within 24 hours
+                if (Date.now() - checkpoint.timestamp < 24 * 60 * 60 * 1000) {
+                    document.getElementById('resumePrompt').style.display = 'flex';
+                }
+            }
+        }
+
+        function resumeReview(confirm) {
+            document.getElementById('resumePrompt').style.display = 'none';
+            if (confirm) {
+                const checkpoint = JSON.parse(localStorage.getItem('review_checkpoint'));
+                reviewWords = checkpoint.words;
+                currentReviewIndex = checkpoint.index;
+                
+                const mainView = document.getElementById('mainView');
+                const reviewView = document.getElementById('reviewView');
+                const bottomControls = document.querySelector('.bottom-controls');
+                
+                mainView.style.display = 'none';
+                reviewView.style.display = 'flex';
+                bottomControls.style.display = 'none';
+                renderReviewCard();
+            } else {
+                localStorage.removeItem('review_checkpoint');
+            }
+        }
 
         function initResultCards() {
             const grid = document.getElementById('resultsGrid');
