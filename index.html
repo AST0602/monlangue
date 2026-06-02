@@ -317,7 +317,7 @@
         }
 
         .star-btn:hover {
-            color: #FFD60A; /* A soft yellow for star, but keeping it subtle */
+            color: #FFD60A;
         }
 
         .star-btn.active {
@@ -374,40 +374,6 @@
 
         .review-toggle:hover {
             background-color: #D2D2D7;
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            body {
-                padding: 24px 16px;
-            }
-            
-            .main-input {
-                font-size: 1rem;
-                padding: 16px 50px 16px 20px;
-            }
-
-            .result-card {
-                padding: 24px;
-            }
-
-            .card-content {
-                font-size: 1.1rem;
-            }
-
-            .mode-tags {
-                gap: 8px;
-            }
-
-            .tag-btn {
-                padding: 8px 16px;
-                font-size: 0.85rem;
-            }
-        }
-
-        /* Animation for capsule buttons */
-        .tag-btn:active {
-            transform: scale(0.95);
         }
 
         /* Modal Styles */
@@ -498,7 +464,7 @@
             transition: var(--transition);
         }
 
-        /* Loading state */
+        /* Loading shimmer */
         .loading-shimmer {
             background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
             background-size: 200% 100%;
@@ -519,7 +485,6 @@
     <div class="container">
         <!-- Main View -->
         <div id="mainView">
-            <!-- Top Search Area -->
             <header class="search-container">
                 <input type="text" class="main-input" placeholder="输入中文、English 或 Français...">
                 <div class="mic-icon">
@@ -532,7 +497,6 @@
                 </div>
             </header>
 
-            <!-- Category Buttons -->
             <nav class="mode-tags">
                 <button class="tag-btn active" onclick="this.classList.toggle('active')">口语</button>
                 <button class="tag-btn" onclick="this.classList.toggle('active')">书面</button>
@@ -540,9 +504,8 @@
                 <button class="tag-btn" onclick="this.classList.toggle('active')">随意</button>
             </nav>
 
-            <!-- Result Cards Area -->
             <main class="results-grid" id="resultsGrid">
-                <!-- 动态渲染生成 -->
+                <!-- Dynamic cards -->
             </main>
         </div>
 
@@ -556,37 +519,24 @@
                     </svg>
                     <span>返回</span>
                 </button>
-                <div class="review-progress" id="reviewProgress">1 / 20</div>
+                <div class="review-progress" id="reviewProgress">1 / 0</div>
             </div>
-            
             <div class="review-card-container" onclick="flipReviewCard()">
                 <div class="review-card-inner" id="reviewCardInner">
                     <div class="review-card-front">
-                        <h2 id="reviewWord">Word</h2>
+                        <h2 id="reviewWord">加载中...</h2>
                     </div>
                     <div class="review-card-back" id="reviewDetails">
-                        <!-- Details filled by JS -->
+                        <!-- Details -->
                     </div>
                 </div>
             </div>
-
             <div class="review-controls">
-                <button class="nav-btn" onclick="prevReviewWord(event)">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                    <span>上一个</span>
-                </button>
-                <button class="nav-btn" onclick="nextReviewWord(event)">
-                    <span>下一个</span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </button>
+                <button class="nav-btn" onclick="prevReviewWord(event)">上一个</button>
+                <button class="nav-btn" onclick="nextReviewWord(event)">下一个</button>
             </div>
         </div>
 
-        <!-- Bottom Controls -->
         <footer class="bottom-controls">
             <button class="icon-btn" onclick="toggleModal(true)">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -630,7 +580,7 @@
                 <input type="text" id="modelName" class="form-control" placeholder="deepseek-chat">
             </div>
             <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: -10px; margin-bottom: 20px;">
-                * 云同步将使用您的 AI API Key 作为鉴权凭证，数据存储在您的 Cloudflare KV 中。
+                * 云同步将使用您的 AI API Key 作为凭证，数据存储在您的 Cloudflare KV 中。
             </div>
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="toggleModal(false)">取消</button>
@@ -640,152 +590,24 @@
     </div>
 
     <script>
-        // Language Configuration
         const enabledLanguages = [
             { code: 'zh', label: '中文' },
             { code: 'en', label: 'ENGLISH' },
             { code: 'fr', label: 'FRANÇAIS' }
         ];
 
-        let currentResultData = null; // Store last AI result for star logic
+        let currentResultData = null;
         let reviewWords = [];
         let currentReviewIndex = 0;
 
-        // Initialization
         window.onload = () => {
             initResultCards();
             loadSettings();
             checkResumeReview();
-            registerServiceWorker();
-        };
-
-        function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(() => console.log('Service Worker Registered'));
+                navigator.serviceWorker.register('./service-worker.js');
             }
-        }
-
-        // Review Mode Logic
-        async function toggleReviewMode(show) {
-            const mainView = document.getElementById('mainView');
-            const reviewView = document.getElementById('reviewView');
-            const bottomControls = document.querySelector('.bottom-controls');
-
-            if (show) {
-                const words = await fetchNotionDatabase();
-                if (words.length === 0) {
-                    alert('词库为空或未配置 Notion，请先收藏单词。');
-                    return;
-                }
-                
-                // Shuffle and pick 20
-                reviewWords = words
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, 20)
-                    .map(item => ({
-                        word: item.properties.Word.title[0]?.plain_text || 'Unknown',
-                        translation: item.properties.Translation.rich_text[0]?.plain_text || '',
-                        example: item.properties.Example.rich_text[0]?.plain_text || '',
-                        scene: item.properties.Scene.select?.name || '常规'
-                    }));
-
-                mainView.style.display = 'none';
-                reviewView.style.display = 'flex';
-                bottomControls.style.display = 'none';
-                renderReviewCard();
-            } else {
-                mainView.style.display = 'block';
-                reviewView.style.display = 'none';
-                bottomControls.style.display = 'flex';
-                // Save progress
-                localStorage.setItem('review_checkpoint', JSON.stringify({
-                    index: currentReviewIndex,
-                    words: reviewWords,
-                    timestamp: Date.now()
-                }));
-            }
-        }
-
-        function renderReviewCard() {
-            const word = reviewWords[currentReviewIndex];
-            document.getElementById('reviewWord').innerText = word.word;
-            document.getElementById('reviewProgress').innerText = `${currentReviewIndex + 1} / ${reviewWords.length}`;
-            
-            const detailsHtml = `
-                <div class="translation-item">
-                    <span class="lang-label" style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">释义</span>
-                    <div style="font-size:1.1rem; font-weight:600;">${word.translation}</div>
-                </div>
-                <div class="translation-item">
-                    <span class="lang-label" style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">例句</span>
-                    <div style="font-size:0.95rem; color:var(--text-secondary);">${word.example}</div>
-                </div>
-                <div style="margin-top:auto; font-size:0.8rem; color:var(--text-secondary); opacity:0.6;">
-                    场景: ${word.scene}
-                </div>
-            `;
-            document.getElementById('reviewDetails').innerHTML = detailsHtml;
-            document.getElementById('reviewCardInner').classList.remove('flipped');
-            
-            // Save index
-            const checkpoint = JSON.parse(localStorage.getItem('review_checkpoint') || '{}');
-            checkpoint.index = currentReviewIndex;
-            localStorage.setItem('review_checkpoint', JSON.stringify(checkpoint));
-        }
-
-        function flipReviewCard() {
-            document.getElementById('reviewCardInner').classList.toggle('flipped');
-        }
-
-        function nextReviewWord(e) {
-            e.stopPropagation();
-            if (currentReviewIndex < reviewWords.length - 1) {
-                currentReviewIndex++;
-                renderReviewCard();
-            } else {
-                alert('恭喜，已完成本次复习！');
-                toggleReviewMode(false);
-            }
-        }
-
-        function prevReviewWord(e) {
-            e.stopPropagation();
-            if (currentReviewIndex > 0) {
-                currentReviewIndex--;
-                renderReviewCard();
-            }
-        }
-
-        function checkResumeReview() {
-            const checkpoint = JSON.parse(localStorage.getItem('review_checkpoint'));
-            if (checkpoint && checkpoint.words && checkpoint.words.length > 0) {
-                // Show prompt if within 24 hours
-                if (Date.now() - checkpoint.timestamp < 24 * 60 * 60 * 1000) {
-                    document.getElementById('resumePrompt').style.display = 'flex';
-                }
-            }
-        }
-
-        function resumeReview(confirm) {
-            document.getElementById('resumePrompt').style.display = 'none';
-            if (confirm) {
-                const checkpoint = JSON.parse(localStorage.getItem('review_checkpoint'));
-                reviewWords = checkpoint.words;
-                currentReviewIndex = checkpoint.index;
-                
-                const mainView = document.getElementById('mainView');
-                const reviewView = document.getElementById('reviewView');
-                const bottomControls = document.querySelector('.bottom-controls');
-                
-                mainView.style.display = 'none';
-                reviewView.style.display = 'flex';
-                bottomControls.style.display = 'none';
-                renderReviewCard();
-            } else {
-                localStorage.removeItem('review_checkpoint');
-            }
-        }
+        };
 
         function initResultCards() {
             const grid = document.getElementById('resultsGrid');
@@ -799,221 +621,132 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="card-content" contenteditable="true" onblur="handleContentEdit('${lang.code}', this)">
-                        等待输入...
-                    </div>
+                    <div class="card-content" contenteditable="true">等待输入...</div>
                 </article>
             `).join('');
         }
 
-        // Star Logic
+        async function syncToCloud() {
+            const apiKey = localStorage.getItem('ai_api_key');
+            const baseUrl = localStorage.getItem('ai_base_url');
+            const vocab = localStorage.getItem('my_vocabulary') || '[]';
+            if (!apiKey || !baseUrl || !baseUrl.includes('workers.dev')) return;
+
+            const syncUrl = `${baseUrl.split('/v1')[0]}/sync`;
+            try {
+                await fetch(syncUrl, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                    body: vocab
+                });
+                showToast('云端同步成功');
+            } catch (e) { console.error('Sync failed', e); }
+        }
+
+        async function fetchFromCloud() {
+            const apiKey = localStorage.getItem('ai_api_key');
+            const baseUrl = localStorage.getItem('ai_base_url');
+            if (!apiKey || !baseUrl || !baseUrl.includes('workers.dev')) return null;
+
+            const syncUrl = `${baseUrl.split('/v1')[0]}/sync`;
+            try {
+                const res = await fetch(syncUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    localStorage.setItem('my_vocabulary', JSON.stringify(data));
+                    return data;
+                }
+            } catch (e) { console.error('Fetch failed', e); }
+            return null;
+        }
+
         async function toggleStar(langCode) {
             if (!currentResultData || !currentResultData[langCode]) return;
-
             const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
-            const originalText = mainInput.value.trim();
-            const langData = currentResultData[langCode];
-            
-            const itemIndex = vocab.findIndex(v => v.originalText === originalText && v.lang === langCode);
-            const card = document.querySelector(`.result-card[data-lang-code="${langCode}"]`);
-            const starBtn = card.querySelector('.star-btn');
+            const text = document.querySelector('.main-input').value.trim();
+            const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
+            const btn = document.querySelector(`.result-card[data-lang-code="${langCode}"] .star-btn`);
 
-            if (itemIndex > -1) {
-                // Unstar
-                vocab.splice(itemIndex, 1);
-                starBtn.classList.remove('active');
-                localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+            if (idx > -1) {
+                vocab.splice(idx, 1);
+                btn.classList.remove('active');
             } else {
-                // Star
-                const entry = {
-                    id: Date.now() + Math.random(),
-                    originalText: originalText,
-                    lang: langCode,
-                    translatedText: langData.content,
-                    extraInfo: langData.extra,
+                vocab.push({
+                    originalText: text, lang: langCode,
+                    translatedText: currentResultData[langCode].content,
+                    extraInfo: currentResultData[langCode].extra,
                     timestamp: new Date().toISOString()
-                };
-                vocab.push(entry);
-                starBtn.classList.add('active');
-                
-                // 先保存到本地，确保状态持久
-                localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
-                
-                // 后台同步到 Notion
-                saveToNotion(entry);
-            }
-        }
-
-        async function saveToNotion(entry) {
-            const token = localStorage.getItem('notion_token');
-            const dbId = localStorage.getItem('notion_db_id');
-            const aiBaseUrl = localStorage.getItem('ai_base_url') || '';
-            
-            if (!token || !dbId) {
-                console.warn('Notion configuration missing.');
-                return;
-            }
-
-            // Route notion requests through proxy if needed
-            let apiUrl = 'https://api.notion.com/v1/pages';
-            if (aiBaseUrl && aiBaseUrl.includes('workers.dev')) {
-                const proxyBase = aiBaseUrl.split('/v1')[0];
-                apiUrl = `${proxyBase}/notion/v1/pages`;
-            }
-
-            const activeTones = Array.from(document.querySelectorAll('.tag-btn.active'))
-                                   .map(btn => btn.innerText);
-            const scene = activeTones.length > 0 ? activeTones[0] : '常规';
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                        'Notion-Version': '2022-06-28'
-                    },
-                    body: JSON.stringify({
-                        parent: { database_id: dbId },
-                        properties: {
-                            'Word': {
-                                title: [{ text: { content: entry.originalText } }]
-                            },
-                            'Translation': {
-                                rich_text: [{ text: { content: entry.translatedText } }]
-                            },
-                            'Example': {
-                                rich_text: [{ text: { content: entry.extraInfo } }]
-                            },
-                            'Scene': {
-                                select: { name: scene }
-                            }
-                        }
-                    })
                 });
+                btn.classList.add('active');
+            }
+            localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+            syncToCloud();
+        }
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Notion API error');
+        async function toggleReviewMode(show) {
+            if (show) {
+                showToast('同步云端词库...');
+                await fetchFromCloud();
+                const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+                if (vocab.length === 0) {
+                    showToast('词库为空，请先收藏单词', true);
+                    return;
                 }
-                // 使用更轻量的提示方式
-                console.log('Synced to Notion');
-                showToast('已同步至 Notion');
-            } catch (err) {
-                console.error('Notion Sync Failed:', err);
-                showToast(`Notion 同步失败: ${err.message}`, true);
+                reviewWords = vocab.sort(() => 0.5 - Math.random()).slice(0, 20);
+                document.getElementById('mainView').style.display = 'none';
+                document.getElementById('reviewView').style.display = 'flex';
+                document.querySelector('.bottom-controls').style.display = 'none';
+                renderReviewCard();
+            } else {
+                document.getElementById('mainView').style.display = 'block';
+                document.getElementById('reviewView').style.display = 'none';
+                document.querySelector('.bottom-controls').style.display = 'flex';
+                localStorage.setItem('review_checkpoint', JSON.stringify({
+                    index: currentReviewIndex, words: reviewWords, timestamp: Date.now()
+                }));
             }
         }
 
-        function showToast(message, isError = false) {
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 30px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: ${isError ? '#FF3B30' : 'var(--text-primary)'};
-                color: white;
-                padding: 12px 24px;
-                border-radius: 100px;
-                font-size: 0.9rem;
-                z-index: 2000;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                animation: slideUp 0.3s ease;
+        function renderReviewCard() {
+            const word = reviewWords[currentReviewIndex];
+            document.getElementById('reviewWord').innerText = word.originalText;
+            document.getElementById('reviewProgress').innerText = `${currentReviewIndex + 1} / ${reviewWords.length}`;
+            document.getElementById('reviewDetails').innerHTML = `
+                <div class="translation-item">
+                    <span class="lang-label">释义 (${word.lang})</span>
+                    <div style="font-weight:600;">${word.translatedText}</div>
+                </div>
+                <div class="translation-item">
+                    <span class="lang-label">例句</span>
+                    <div style="color:var(--text-secondary);">${word.extraInfo}</div>
+                </div>
             `;
-            toast.innerText = message;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => toast.remove(), 500);
-            }, 3000);
+            document.getElementById('reviewCardInner').classList.remove('flipped');
         }
 
-        async function fetchNotionDatabase() {
-            const token = localStorage.getItem('notion_token');
-            const dbId = localStorage.getItem('notion_db_id');
-            const aiBaseUrl = localStorage.getItem('ai_base_url');
-            
-            if (!token || !dbId) {
-                alert('请先在设置中配置 Notion Token 和 Database ID');
-                return [];
+        function flipReviewCard() { document.getElementById('reviewCardInner').classList.toggle('flipped'); }
+        function nextReviewWord(e) {
+            e.stopPropagation();
+            if (currentReviewIndex < reviewWords.length - 1) {
+                currentReviewIndex++; renderReviewCard();
+            } else {
+                showToast('复习完成！'); toggleReviewMode(false);
             }
-
-            let apiUrl = `https://api.notion.com/v1/databases/${dbId}/query`;
-            if (aiBaseUrl && aiBaseUrl.includes('workers.dev')) {
-                const proxyBase = aiBaseUrl.split('/v1')[0];
-                apiUrl = `${proxyBase}/notion/v1/databases/${dbId}/query`;
-            }
-
-            let allResults = [];
-            let hasMore = true;
-            let startCursor = undefined;
-
-            try {
-                while (hasMore) {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                            'Notion-Version': '2022-06-28'
-                        },
-                        body: JSON.stringify({
-                            start_cursor: startCursor,
-                            page_size: 100
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.message || 'Failed to fetch from Notion');
-                    }
-
-                    const data = await response.json();
-                    allResults = [...allResults, ...data.results];
-                    hasMore = data.has_more;
-                    startCursor = data.next_cursor;
-                }
-                return allResults;
-            } catch (err) {
-                console.error('Fetch Notion Database Failed:', err);
-                alert(`读取 Notion 失败: ${err.message}`);
-                return [];
+        }
+        function prevReviewWord(e) {
+            e.stopPropagation();
+            if (currentReviewIndex > 0) {
+                currentReviewIndex--; renderReviewCard();
             }
         }
 
-        function updateStarUI(originalText) {
-            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
-            enabledLanguages.forEach(lang => {
-                const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
-                if (!card) return;
-                const starBtn = card.querySelector('.star-btn');
-                const isStarred = vocab.some(v => v.originalText === originalText && v.lang === lang.code);
-                starBtn.classList.toggle('active', isStarred);
-            });
-        }
-
-        // Content Edit Logic
-        function handleContentEdit(langCode, element) {
-            console.log(`Edited ${langCode}: ${element.innerText}`);
-            // Future: sync back to localStorage if starred
-        }
-
-        // Storage Logic
         function saveSettings() {
-            const apiKey = document.getElementById('apiKey').value;
-            let baseUrl = document.getElementById('baseUrl').value.trim();
-            const modelName = document.getElementById('modelName').value;
-            
-            if (baseUrl.endsWith('/')) {
-                baseUrl = baseUrl.replace(/\/+$/, "");
-            }
-
-            localStorage.setItem('ai_api_key', apiKey);
-            localStorage.setItem('ai_base_url', baseUrl || 'https://api.openai.com/v1');
-            localStorage.setItem('ai_model_name', modelName || 'deepseek-chat');
-            
+            const key = document.getElementById('apiKey').value;
+            let url = document.getElementById('baseUrl').value.trim().replace(/\/+$/, "");
+            const model = document.getElementById('modelName').value;
+            localStorage.setItem('ai_api_key', key);
+            localStorage.setItem('ai_base_url', url || 'https://api.openai.com/v1');
+            localStorage.setItem('ai_model_name', model || 'deepseek-chat');
             toggleModal(false);
             showToast('配置已保存');
         }
@@ -1024,120 +757,65 @@
             document.getElementById('modelName').value = localStorage.getItem('ai_model_name') || 'deepseek-chat';
         }
 
-        function toggleModal(show) {
-            document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none';
-            if(show) loadSettings();
-        }
+        function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
 
-        // AI Request Logic
-        const mainInput = document.querySelector('.main-input');
-        
-        mainInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && mainInput.value.trim()) {
-                handleAIRequest(mainInput.value.trim());
-            }
-        });
+        document.querySelector('.main-input').onkeypress = async (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                const text = e.target.value.trim();
+                const key = localStorage.getItem('ai_api_key');
+                const url = localStorage.getItem('ai_base_url');
+                if (!key) { showToast('请先配置 API Key', true); toggleModal(true); return; }
 
-        async function handleAIRequest(userInput) {
-            const apiKey = localStorage.getItem('ai_api_key');
-            const baseUrl = localStorage.getItem('ai_base_url');
-            const modelName = localStorage.getItem('ai_model_name') || 'deepseek-chat';
+                document.querySelectorAll('.card-content').forEach(el => el.innerHTML = '<div class="loading-shimmer"></div>');
+                const tones = Array.from(document.querySelectorAll('.tag-btn.active')).map(b => b.innerText).join('、');
+                const prompt = `你是一个精通中、英、法专家。输入：${text}。场景：${tones}。请严格返回 JSON：{ "zh": {"content":"", "extra":""}, "en":..., "fr":... }`;
 
-            if (!apiKey) {
-                alert('请先在设置中配置 API Key');
-                toggleModal(true);
-                return;
-            }
-
-            const activeTones = Array.from(document.querySelectorAll('.tag-btn.active'))
-                                   .map(btn => btn.innerText);
-            
-            let finalPrompt = userInput;
-            if (activeTones.length > 0) {
-                finalPrompt += `（请注意：翻译和例句需符合${activeTones.join('、')}场景）`;
-            }
-
-            renderLoading();
-
-            // Dynamic System Prompt
-            const langRules = enabledLanguages.map(l => `"${l.code}": { "content": "内容", "extra": "音标/补充" }`).join(',\n  ');
-            const systemPrompt = `你是一个精通${enabledLanguages.map(l => l.label).join('、')}的多语专家。
-如果输入是单词或词组，必须返回它在所有设定语言中的核心意思、音标及2个实用例句。
-如果输入是句子，请直接提供地道的多语互译。
-你必须严格、只能输出合法的 JSON 字符串，绝对不要包含 \`\`\`json 等 Markdown 标记，不要有任何前言、后记或解释。格式如下：
-{
-  ${langRules}
-}`;
-
-            try {
-                const response = await fetch(`${baseUrl}/chat/completions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: modelName,
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: finalPrompt }
-                        ]
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                let content = data.choices[0].message.content;
-                content = content.replace(/```json\s?|\s?```/g, '').trim();
-                
                 try {
+                    const res = await fetch(`${url}/chat/completions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                        body: JSON.stringify({
+                            model: localStorage.getItem('ai_model_name') || 'deepseek-chat',
+                            messages: [{ role: 'system', content: prompt }]
+                        })
+                    });
+                    const data = await res.json();
+                    let content = data.choices[0].message.content.replace(/```json\s?|\s?```/g, '').trim();
                     currentResultData = JSON.parse(content);
-                    renderResults(currentResultData);
-                    updateStarUI(userInput);
-                } catch (parseError) {
-                    throw new Error('AI 返回格式错误，无法解析 JSON');
+                    enabledLanguages.forEach(lang => {
+                        const el = document.querySelector(`.result-card[data-lang-code="${lang.code}"] .card-content`);
+                        const d = currentResultData[lang.code];
+                        el.innerHTML = `<div style="font-weight:500;">${d.content}</div><div style="font-size:0.9rem;color:var(--text-secondary);">${d.extra}</div>`;
+                    });
+                    const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+                    enabledLanguages.forEach(l => {
+                        const isStarred = vocab.some(v => v.originalText === text && v.lang === l.code);
+                        document.querySelector(`.result-card[data-lang-code="${l.code}"] .star-btn`).classList.toggle('active', isStarred);
+                    });
+                } catch (err) {
+                    document.querySelectorAll('.card-content').forEach(el => el.innerHTML = `<div style="color:#FF3B30;">错误: ${err.message}</div>`);
                 }
-
-            } catch (error) {
-                console.error('AI Request Error:', error);
-                let msg = error.message;
-                if (msg === 'Failed to fetch') {
-                    msg = '网络连接失败或跨域(CORS)被拦截。建议：1.检查网络 2.使用支持跨域的中转API 3.安装"Allow CORS"浏览器插件。';
-                }
-                showErrorOnCards(msg);
             }
+        };
+
+        function showToast(m, isErr = false) {
+            const t = document.createElement('div');
+            t.style.cssText = `position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:${isErr?'#FF3B30':'#2C2C2E'};color:white;padding:12px 24px;border-radius:100px;font-size:0.9rem;z-index:2000;box-shadow:0 10px 30px rgba(0,0,0,0.1);`;
+            t.innerText = m; document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
         }
 
-        function renderLoading() {
-            document.querySelectorAll('.card-content').forEach(el => {
-                el.innerHTML = '<div class="loading-shimmer"></div><div class="loading-shimmer" style="width:80%"></div>';
-            });
+        function checkResumeReview() {
+            const cp = JSON.parse(localStorage.getItem('review_checkpoint'));
+            if (cp && Date.now() - cp.timestamp < 86400000) document.getElementById('resumePrompt').style.display = 'flex';
         }
-
-        function renderResults(data) {
-            enabledLanguages.forEach(lang => {
-                const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
-                if (!card) return;
-                const contentEl = card.querySelector('.card-content');
-                const langData = data[lang.code];
-                
-                if (langData) {
-                    contentEl.innerHTML = `
-                        <div style="font-weight: 500; margin-bottom: 8px;">${langData.content}</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4;">${langData.extra}</div>
-                    `;
-                }
-            });
-        }
-
-        function showErrorOnCards(message) {
-            document.querySelectorAll('.card-content').forEach(el => {
-                el.innerHTML = `<div style="color: #FF3B30; font-size: 0.9rem;">错误: ${message}</div>`;
-            });
+        function resumeReview(c) {
+            document.getElementById('resumePrompt').style.display = 'none';
+            if (c) {
+                const cp = JSON.parse(localStorage.getItem('review_checkpoint'));
+                reviewWords = cp.words; currentReviewIndex = cp.index;
+                toggleReviewMode(true);
+            } else localStorage.removeItem('review_checkpoint');
         }
     </script>
 </body>
