@@ -824,9 +824,10 @@
             const starBtn = card.querySelector('.star-btn');
 
             if (itemIndex > -1) {
-                // Unstar (Local only for now, Notion deletion is complex via frontend)
+                // Unstar
                 vocab.splice(itemIndex, 1);
                 starBtn.classList.remove('active');
+                localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
             } else {
                 // Star
                 const entry = {
@@ -840,24 +841,25 @@
                 vocab.push(entry);
                 starBtn.classList.add('active');
                 
-                // Notion Sync
-                await saveToNotion(entry);
+                // 先保存到本地，确保状态持久
+                localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+                
+                // 后台同步到 Notion
+                saveToNotion(entry);
             }
-
-            localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
         }
 
         async function saveToNotion(entry) {
             const token = localStorage.getItem('notion_token');
             const dbId = localStorage.getItem('notion_db_id');
-            const aiBaseUrl = localStorage.getItem('ai_base_url');
+            const aiBaseUrl = localStorage.getItem('ai_base_url') || '';
             
             if (!token || !dbId) {
-                console.warn('Notion configuration missing. Skipping sync.');
+                console.warn('Notion configuration missing.');
                 return;
             }
 
-            // If using a proxy, route notion requests through it
+            // Route notion requests through proxy if needed
             let apiUrl = 'https://api.notion.com/v1/pages';
             if (aiBaseUrl && aiBaseUrl.includes('workers.dev')) {
                 const proxyBase = aiBaseUrl.split('/v1')[0];
@@ -899,11 +901,38 @@
                     const error = await response.json();
                     throw new Error(error.message || 'Notion API error');
                 }
-                alert('已同步至 Notion');
+                // 使用更轻量的提示方式
+                console.log('Synced to Notion');
+                showToast('已同步至 Notion');
             } catch (err) {
                 console.error('Notion Sync Failed:', err);
-                alert(`Notion 同步失败: ${err.message}`);
+                showToast(`Notion 同步失败: ${err.message}`, true);
             }
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${isError ? '#FF3B30' : 'var(--text-primary)'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 100px;
+                font-size: 0.9rem;
+                z-index: 2000;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                animation: slideUp 0.3s ease;
+            `;
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
         }
 
         async function fetchNotionDatabase() {
