@@ -1,4 +1,4 @@
-const CACHE_NAME = 'easytool-v1';
+const CACHE_NAME = 'easytool-v2';
 const ASSETS = [
   './',
   './index.html',
