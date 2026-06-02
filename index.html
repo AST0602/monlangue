@@ -629,13 +629,8 @@
                 <label for="modelName">Model Name</label>
                 <input type="text" id="modelName" class="form-control" placeholder="deepseek-chat">
             </div>
-            <div class="form-group">
-                <label for="notionToken">Notion Token</label>
-                <input type="password" id="notionToken" class="form-control" placeholder="ntn_...">
-            </div>
-            <div class="form-group">
-                <label for="notionDbId">Database ID</label>
-                <input type="text" id="notionDbId" class="form-control" placeholder="输入32位数据库ID">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: -10px; margin-bottom: 20px;">
+                * 云同步将使用您的 AI API Key 作为鉴权凭证，数据存储在您的 Cloudflare KV 中。
             </div>
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="toggleModal(false)">取消</button>
@@ -1010,10 +1005,7 @@
             const apiKey = document.getElementById('apiKey').value;
             let baseUrl = document.getElementById('baseUrl').value.trim();
             const modelName = document.getElementById('modelName').value;
-            const notionToken = document.getElementById('notionToken').value;
-            const notionDbId = document.getElementById('notionDbId').value;
             
-            // Normalize URL: remove trailing slashes
             if (baseUrl.endsWith('/')) {
                 baseUrl = baseUrl.replace(/\/+$/, "");
             }
@@ -1021,19 +1013,15 @@
             localStorage.setItem('ai_api_key', apiKey);
             localStorage.setItem('ai_base_url', baseUrl || 'https://api.openai.com/v1');
             localStorage.setItem('ai_model_name', modelName || 'deepseek-chat');
-            localStorage.setItem('notion_token', notionToken);
-            localStorage.setItem('notion_db_id', notionDbId);
             
             toggleModal(false);
-            alert('配置已保存');
+            showToast('配置已保存');
         }
 
         function loadSettings() {
             document.getElementById('apiKey').value = localStorage.getItem('ai_api_key') || '';
             document.getElementById('baseUrl').value = localStorage.getItem('ai_base_url') || 'https://api.openai.com/v1';
             document.getElementById('modelName').value = localStorage.getItem('ai_model_name') || 'deepseek-chat';
-            document.getElementById('notionToken').value = localStorage.getItem('notion_token') || '';
-            document.getElementById('notionDbId').value = localStorage.getItem('notion_db_id') || '';
         }
 
         function toggleModal(show) {
