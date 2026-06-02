@@ -34,7 +34,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding: 40px 20px;
+            padding: 20px 20px 40px 20px;
             overflow-x: hidden;
         }
 
@@ -45,6 +45,21 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #mainView {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .results-grid {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 32px;
         }
 
         /* Review View */
@@ -485,6 +500,16 @@
     <div class="container">
         <!-- Main View -->
         <div id="mainView">
+            <main class="results-grid" id="resultsGrid">
+                <!-- Dynamic cards -->
+            </main>
+
+            <nav class="mode-tags" style="margin-bottom: 12px;">
+                <button class="tag-btn" onclick="this.classList.toggle('active')">Formel</button>
+                <button class="tag-btn active" onclick="this.classList.toggle('active')">Standard</button>
+                <button class="tag-btn" onclick="this.classList.toggle('active')">Oral</button>
+            </nav>
+
             <header class="search-container">
                 <input type="text" class="main-input" placeholder="输入中文、English 或 Français...">
                 <div class="mic-icon">
@@ -496,17 +521,6 @@
                     </svg>
                 </div>
             </header>
-
-            <nav class="mode-tags">
-                <button class="tag-btn active" onclick="this.classList.toggle('active')">口语</button>
-                <button class="tag-btn" onclick="this.classList.toggle('active')">书面</button>
-                <button class="tag-btn" onclick="this.classList.toggle('active')">礼貌</button>
-                <button class="tag-btn" onclick="this.classList.toggle('active')">随意</button>
-            </nav>
-
-            <main class="results-grid" id="resultsGrid">
-                <!-- Dynamic cards -->
-            </main>
         </div>
 
         <!-- Review View -->
