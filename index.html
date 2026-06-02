@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Language Tool</title>
+    <style>
+        :root {
+            --bg-color: #F5F5F7;
+            --card-color: #FFFFFF;
+            --text-primary: #2C2C2E;
+            --text-secondary: #8E8E93;
+            --border-radius: 16px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Top Search Area */
+        .search-container {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .main-input {
+            width: 100%;
+            padding: 20px 60px 20px 24px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 20px;
+            background-color: var(--card-color);
+            color: var(--text-primary);
+            box-shadow: var(--shadow);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .main-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .main-input:focus {
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .mic-icon {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            opacity: 0.6;
+            transition: var(--transition);
+        }
+
+        .mic-icon:hover {
+            opacity: 1;
+        }
+
+        /* Category Buttons */
+        .mode-tags {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .tag-btn {
+            padding: 10px 24px;
+            border-radius: 100px;
+            border: none;
+            background-color: #E8E8ED;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tag-btn.active {
+            background-color: var(--text-primary);
+            color: white;
+        }
+
+        .tag-btn:hover:not(.active) {
+            background-color: #D2D2D7;
+        }
+
+        /* Result Cards */
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .result-card {
+            background-color: var(--card-color);
+            padding: 32px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .lang-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .star-btn {
+            background: none;
+            border: none;
+            color: #D2D2D7;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .star-btn:hover {
+            color: #FFD60A; /* A soft yellow for star, but keeping it subtle */
+        }
+
+        .star-btn.active {
+            color: #FFD60A;
+        }
+
+        .card-content {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            letter-spacing: 0.01em;
+            word-break: break-word;
+        }
+
+        /* Bottom Controls */
+        .bottom-controls {
+            margin-top: auto;
+            padding-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .icon-btn:hover {
+            background-color: #E8E8ED;
+            color: var(--text-primary);
+        }
+
+        .review-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 100px;
+            background-color: #E8E8ED;
+            transition: var(--transition);
+        }
+
+        .review-toggle:hover {
+            background-color: #D2D2D7;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 24px 16px;
+            }
+            
+            .main-input {
+                font-size: 1rem;
+                padding: 16px 50px 16px 20px;
+            }
+
+            .result-card {
+                padding: 24px;
+            }
+
+            .card-content {
+                font-size: 1.1rem;
+            }
+
+            .mode-tags {
+                gap: 8px;
+            }
+
+            .tag-btn {
+                padding: 8px 16px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Animation for capsule buttons */
+        .tag-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: var(--card-color);
+            padding: 32px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #E8E8ED;
+            background: #F9F9FB;
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--text-secondary);
+            background: #FFFFFF;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .btn-primary {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-secondary {
+            background: #E8E8ED;
+            color: var(--text-secondary);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        /* Loading state */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+            height: 1.25rem;
+            margin-bottom: 8px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Top Search Area -->
+        <header class="search-container">
+            <input type="text" class="main-input" placeholder="输入中文、English 或 Français...">
+            <div class="mic-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+            </div>
+        </header>
+
+        <!-- Category Buttons -->
+        <nav class="mode-tags">
+            <button class="tag-btn active" onclick="this.classList.toggle('active')">口语</button>
+            <button class="tag-btn" onclick="this.classList.toggle('active')">书面</button>
+            <button class="tag-btn" onclick="this.classList.toggle('active')">礼貌</button>
+            <button class="tag-btn" onclick="this.classList.toggle('active')">随意</button>
+        </nav>
+
+        <!-- Result Cards Area -->
+        <main class="results-grid" id="resultsGrid">
+            <!-- 动态渲染生成 -->
+        </main>
+
+        <!-- Bottom Controls -->
+        <footer class="bottom-controls">
+            <button class="icon-btn" onclick="toggleModal(true)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>设置</span>
+            </button>
+            <div class="review-toggle">
+                <span>进入复习模式</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 class="modal-title">API 配置</h2>
+            <div class="form-group">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" class="form-control" placeholder="sk-...">
+            </div>
+            <div class="form-group">
+                <label for="baseUrl">Base URL</label>
+                <input type="text" id="baseUrl" class="form-control" placeholder="https://api.openai.com/v1">
+            </div>
+            <div class="form-group">
+                <label for="modelName">Model Name</label>
+                <input type="text" id="modelName" class="form-control" placeholder="deepseek-chat">
+            </div>
+            <div class="form-group">
+                <label for="notionToken">Notion Token</label>
+                <input type="password" id="notionToken" class="form-control" placeholder="ntn_...">
+            </div>
+            <div class="form-group">
+                <label for="notionDbId">Database ID</label>
+                <input type="text" id="notionDbId" class="form-control" placeholder="输入32位数据库ID">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="toggleModal(false)">取消</button>
+                <button class="btn-primary" onclick="saveSettings()">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Language Configuration
+        const enabledLanguages = [
+            { code: 'zh', label: '中文' },
+            { code: 'en', label: 'ENGLISH' },
+            { code: 'fr', label: 'FRANÇAIS' }
+        ];
+
+        let currentResultData = null; // Store last AI result for star logic
+
+        // Initialization
+        window.onload = () => {
+            initResultCards();
+            loadSettings();
+        };
+
+        function initResultCards() {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = enabledLanguages.map(lang => `
+                <article class="result-card" data-lang-code="${lang.code}">
+                    <div class="card-header">
+                        <span class="lang-label">${lang.label}</span>
+                        <button class="star-btn" onclick="toggleStar('${lang.code}')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="card-content" contenteditable="true" onblur="handleContentEdit('${lang.code}', this)">
+                        等待输入...
+                    </div>
+                </article>
+            `).join('');
+        }
+
+        // Star Logic
+        async function toggleStar(langCode) {
+            if (!currentResultData || !currentResultData[langCode]) return;
+
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            const originalText = mainInput.value.trim();
+            const langData = currentResultData[langCode];
+            
+            const itemIndex = vocab.findIndex(v => v.originalText === originalText && v.lang === langCode);
+            const card = document.querySelector(`.result-card[data-lang-code="${langCode}"]`);
+            const starBtn = card.querySelector('.star-btn');
+
+            if (itemIndex > -1) {
+                // Unstar (Local only for now, Notion deletion is complex via frontend)
+                vocab.splice(itemIndex, 1);
+                starBtn.classList.remove('active');
+            } else {
+                // Star
+                const entry = {
+                    id: Date.now() + Math.random(),
+                    originalText: originalText,
+                    lang: langCode,
+                    translatedText: langData.content,
+                    extraInfo: langData.extra,
+                    timestamp: new Date().toISOString()
+                };
+                vocab.push(entry);
+                starBtn.classList.add('active');
+                
+                // Notion Sync
+                await saveToNotion(entry);
+            }
+
+            localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+        }
+
+        async function saveToNotion(entry) {
+            const token = localStorage.getItem('notion_token');
+            const dbId = localStorage.getItem('notion_db_id');
+            
+            if (!token || !dbId) {
+                console.warn('Notion configuration missing. Skipping sync.');
+                return;
+            }
+
+            const activeTones = Array.from(document.querySelectorAll('.tag-btn.active'))
+                                   .map(btn => btn.innerText);
+            const scene = activeTones.length > 0 ? activeTones[0] : '常规';
+
+            try {
+                const response = await fetch('https://api.notion.com/v1/pages', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Notion-Version': '2022-06-28'
+                    },
+                    body: JSON.stringify({
+                        parent: { database_id: dbId },
+                        properties: {
+                            'Word': {
+                                title: [{ text: { content: entry.originalText } }]
+                            },
+                            'Translation': {
+                                rich_text: [{ text: { content: entry.translatedText } }]
+                            },
+                            'Example': {
+                                rich_text: [{ text: { content: entry.extraInfo } }]
+                            },
+                            'Scene': {
+                                select: { name: scene }
+                            }
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Notion API error');
+                }
+                console.log('Successfully saved to Notion');
+            } catch (err) {
+                console.error('Notion Sync Failed:', err);
+                // We don't alert here to avoid interrupting UX, but log it
+            }
+        }
+
+        async function fetchNotionDatabase() {
+            const token = localStorage.getItem('notion_token');
+            const dbId = localStorage.getItem('notion_db_id');
+            
+            if (!token || !dbId) return [];
+
+            let allResults = [];
+            let hasMore = true;
+            let startCursor = undefined;
+
+            try {
+                while (hasMore) {
+                    const response = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                            'Notion-Version': '2022-06-28'
+                        },
+                        body: JSON.stringify({
+                            start_cursor: startCursor,
+                            page_size: 100
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to fetch from Notion');
+
+                    const data = await response.json();
+                    allResults = [...allResults, ...data.results];
+                    hasMore = data.has_more;
+                    startCursor = data.next_cursor;
+                }
+                return allResults;
+            } catch (err) {
+                console.error('Fetch Notion Database Failed:', err);
+                return [];
+            }
+        }
+
+        function updateStarUI(originalText) {
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            enabledLanguages.forEach(lang => {
+                const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
+                if (!card) return;
+                const starBtn = card.querySelector('.star-btn');
+                const isStarred = vocab.some(v => v.originalText === originalText && v.lang === lang.code);
+                starBtn.classList.toggle('active', isStarred);
+            });
+        }
+
+        // Content Edit Logic
+        function handleContentEdit(langCode, element) {
+            console.log(`Edited ${langCode}: ${element.innerText}`);
+            // Future: sync back to localStorage if starred
+        }
+
+        // Storage Logic
+        function saveSettings() {
+            const apiKey = document.getElementById('apiKey').value;
+            const baseUrl = document.getElementById('baseUrl').value;
+            const modelName = document.getElementById('modelName').value;
+            const notionToken = document.getElementById('notionToken').value;
+            const notionDbId = document.getElementById('notionDbId').value;
+            
+            localStorage.setItem('ai_api_key', apiKey);
+            localStorage.setItem('ai_base_url', baseUrl || 'https://api.openai.com/v1');
+            localStorage.setItem('ai_model_name', modelName || 'deepseek-chat');
+            localStorage.setItem('notion_token', notionToken);
+            localStorage.setItem('notion_db_id', notionDbId);
+            
+            toggleModal(false);
+            alert('配置已保存');
+        }
+
+        function loadSettings() {
+            document.getElementById('apiKey').value = localStorage.getItem('ai_api_key') || '';
+            document.getElementById('baseUrl').value = localStorage.getItem('ai_base_url') || 'https://api.openai.com/v1';
+            document.getElementById('modelName').value = localStorage.getItem('ai_model_name') || 'deepseek-chat';
+            document.getElementById('notionToken').value = localStorage.getItem('notion_token') || '';
+            document.getElementById('notionDbId').value = localStorage.getItem('notion_db_id') || '';
+        }
+
+        function toggleModal(show) {
+            document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none';
+            if(show) loadSettings();
+        }
+
+        // AI Request Logic
+        const mainInput = document.querySelector('.main-input');
+        
+        mainInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && mainInput.value.trim()) {
+                handleAIRequest(mainInput.value.trim());
+            }
+        });
+
+        async function handleAIRequest(userInput) {
+            const apiKey = localStorage.getItem('ai_api_key');
+            const baseUrl = localStorage.getItem('ai_base_url');
+            const modelName = localStorage.getItem('ai_model_name') || 'deepseek-chat';
+
+            if (!apiKey) {
+                alert('请先在设置中配置 API Key');
+                toggleModal(true);
+                return;
+            }
+
+            const activeTones = Array.from(document.querySelectorAll('.tag-btn.active'))
+                                   .map(btn => btn.innerText);
+            
+            let finalPrompt = userInput;
+            if (activeTones.length > 0) {
+                finalPrompt += `（请注意：翻译和例句需符合${activeTones.join('、')}场景）`;
+            }
+
+            renderLoading();
+
+            // Dynamic System Prompt
+            const langRules = enabledLanguages.map(l => `"${l.code}": { "content": "内容", "extra": "音标/补充" }`).join(',\n  ');
+            const systemPrompt = `你是一个精通${enabledLanguages.map(l => l.label).join('、')}的多语专家。
+如果输入是单词或词组，必须返回它在所有设定语言中的核心意思、音标及2个实用例句。
+如果输入是句子，请直接提供地道的多语互译。
+你必须严格、只能输出合法的 JSON 字符串，绝对不要包含 \`\`\`json 等 Markdown 标记，不要有任何前言、后记或解释。格式如下：
+{
+  ${langRules}
+}`;
+
+            try {
+                const response = await fetch(`${baseUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: modelName,
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: finalPrompt }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                let content = data.choices[0].message.content;
+                content = content.replace(/```json\s?|\s?```/g, '').trim();
+                
+                try {
+                    currentResultData = JSON.parse(content);
+                    renderResults(currentResultData);
+                    updateStarUI(userInput);
+                } catch (parseError) {
+                    throw new Error('AI 返回格式错误，无法解析 JSON');
+                }
+
+            } catch (error) {
+                console.error('AI Request Error:', error);
+                showErrorOnCards(error.message);
+            }
+        }
+
+        function renderLoading() {
+            document.querySelectorAll('.card-content').forEach(el => {
+                el.innerHTML = '<div class="loading-shimmer"></div><div class="loading-shimmer" style="width:80%"></div>';
+            });
+        }
+
+        function renderResults(data) {
+            enabledLanguages.forEach(lang => {
+                const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
+                if (!card) return;
+                const contentEl = card.querySelector('.card-content');
+                const langData = data[lang.code];
+                
+                if (langData) {
+                    contentEl.innerHTML = `
+                        <div style="font-weight: 500; margin-bottom: 8px;">${langData.content}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4;">${langData.extra}</div>
+                    `;
+                }
+            });
+        }
+
+        function showErrorOnCards(message) {
+            document.querySelectorAll('.card-content').forEach(el => {
+                el.innerHTML = `<div style="color: #FF3B30; font-size: 0.9rem;">错误: ${message}</div>`;
+            });
+        }
+    </script>
+</body>
+</html>
