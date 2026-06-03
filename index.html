@@ -255,6 +255,62 @@
             opacity: 1;
         }
 
+        .clear-icon {
+            position: absolute;
+            right: 54px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            opacity: 0.4;
+            transition: var(--transition);
+        }
+
+        .clear-icon:hover {
+            opacity: 0.8;
+        }
+
+        /* History Tags */
+        .history-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .history-tag {
+            padding: 4px 12px;
+            background: rgba(0,0,0,0.03);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .history-tag:hover {
+            background: rgba(0,0,0,0.06);
+            color: var(--text-primary);
+        }
+
+        .history-tag .delete-history {
+            opacity: 0.3;
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .history-tag .delete-history:hover {
+            opacity: 1;
+            color: #FF3B30;
+        }
+
         /* Category Buttons */
         .mode-tags {
             display: flex;
@@ -344,6 +400,27 @@
             color: var(--text-primary);
             letter-spacing: 0.01em;
             word-break: break-word;
+            outline: none;
+        }
+
+        .highlight-btn {
+            position: absolute;
+            background: var(--text-primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        mark {
+            background-color: #FFD60A;
+            color: inherit;
+            border-radius: 4px;
+            padding: 0 2px;
         }
 
         /* Bottom Controls */
@@ -510,8 +587,18 @@
                 <button class="tag-btn" onclick="this.classList.toggle('active')">Oral</button>
             </nav>
 
+            <div class="history-container" id="historyContainer"></div>
+
+            <div id="textHighlightBtn" class="highlight-btn" onclick="applyHighlight()">高亮</div>
+
             <header class="search-container">
-                <input type="text" class="main-input" placeholder="输入中文、English 或 Français...">
+                <input type="text" class="main-input" placeholder="输入中文、English 或 Français..." oninput="toggleClearBtn(this)">
+                <div class="clear-icon" id="clearBtn" onclick="clearInput()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </div>
                 <div class="mic-icon">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
@@ -605,9 +692,9 @@
 
     <script>
         const enabledLanguages = [
-            { code: 'zh', label: '中文' },
+            { code: 'fr', label: 'FRANÇAIS' },
             { code: 'en', label: 'ENGLISH' },
-            { code: 'fr', label: 'FRANÇAIS' }
+            { code: 'zh', label: '中文' }
         ];
 
         let currentResultData = null;
@@ -618,10 +705,115 @@
             initResultCards();
             loadSettings();
             checkResumeReview();
+            renderHistory();
+            setupHighlightListener();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js');
             }
         };
+
+        // Highlight Logic
+        function setupHighlightListener() {
+            document.addEventListener('mouseup', () => {
+                const selection = window.getSelection();
+                const btn = document.getElementById('textHighlightBtn');
+                
+                if (selection.toString().trim() && isInsideCardContent(selection.anchorNode)) {
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    
+                    btn.style.display = 'block';
+                    btn.style.top = `${rect.top + window.scrollY - 40}px`;
+                    btn.style.left = `${rect.left + window.scrollX + (rect.width / 2) - 20}px`;
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+        }
+
+        function isInsideCardContent(node) {
+            while (node) {
+                if (node.classList && node.classList.contains('card-content')) return true;
+                node = node.parentNode;
+            }
+            return false;
+        }
+
+        function applyHighlight() {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            const mark = document.createElement('mark');
+            range.surroundContents(mark);
+            
+            // Auto sync to cloud if starred
+            const card = mark.closest('.result-card');
+            if (card) {
+                const langCode = card.getAttribute('data-lang-code');
+                const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+                const text = document.querySelector('.main-input').value.trim();
+                const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
+                
+                if (idx > -1) {
+                    vocab[idx].translatedText = card.querySelector('.card-content').innerHTML;
+                    localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+                    syncToCloud();
+                }
+            }
+            
+            window.getSelection().removeAllRanges();
+            document.getElementById('textHighlightBtn').style.display = 'none';
+        }
+
+        // Input Helpers
+        function toggleClearBtn(input) {
+            document.getElementById('clearBtn').style.display = input.value ? 'flex' : 'none';
+        }
+
+        function clearInput() {
+            const input = document.querySelector('.main-input');
+            input.value = '';
+            toggleClearBtn(input);
+            input.focus();
+        }
+
+        // History Logic
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('search_history') || '[]');
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = history.map((text, i) => `
+                <div class="history-tag" onclick="useHistory('${text}')">
+                    <span>${text}</span>
+                    <span class="delete-history" onclick="deleteHistory(event, ${i})">×</span>
+                </div>
+            `).join('');
+        }
+
+        function addHistory(text) {
+            let history = JSON.parse(localStorage.getItem('search_history') || '[]');
+            history = history.filter(t => t !== text); // Remove duplicates
+            history.unshift(text);
+            history = history.slice(0, 10); // Keep last 10
+            localStorage.setItem('search_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function deleteHistory(e, index) {
+            e.stopPropagation();
+            let history = JSON.parse(localStorage.getItem('search_history') || '[]');
+            history.splice(index, 1);
+            localStorage.setItem('search_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function useHistory(text) {
+            const input = document.querySelector('.main-input');
+            input.value = text;
+            toggleClearBtn(input);
+            // Trigger search
+            input.dispatchEvent(new KeyboardEvent('keypress', {'key': 'Enter'}));
+        }
 
         function initResultCards() {
             const grid = document.getElementById('resultsGrid');
@@ -776,13 +968,33 @@
         document.querySelector('.main-input').onkeypress = async (e) => {
             if (e.key === 'Enter' && e.target.value.trim()) {
                 const text = e.target.value.trim();
+                addHistory(text); // Add to history
+                
+                // 智能检测输入是否包含中文
+                const isChineseInput = /[\u4e00-\u9fa5]/.test(text);
+
                 const key = localStorage.getItem('ai_api_key');
                 const url = localStorage.getItem('ai_base_url');
                 if (!key) { showToast('请先配置 API Key', true); toggleModal(true); return; }
 
                 document.querySelectorAll('.card-content').forEach(el => el.innerHTML = '<div class="loading-shimmer"></div>');
+                
+                // 根据输入语言动态调整显示的卡片
+                enabledLanguages.forEach(lang => {
+                    const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
+                    if (lang.code === 'zh' && isChineseInput) {
+                        card.style.display = 'none';
+                    } else {
+                        card.style.display = 'block';
+                    }
+                });
+
                 const tones = Array.from(document.querySelectorAll('.tag-btn.active')).map(b => b.innerText).join('、');
-                const prompt = `你是一个精通中、英、法专家。输入：${text}。场景：${tones}。请严格返回 JSON：{ "zh": {"content":"", "extra":""}, "en":..., "fr":... }`;
+                const prompt = `你是一个精通中、英、法专家。
+输入：${text}。场景：${tones}。
+要求：
+1. 如果输入是单词，外语（英、法）必须包含词性（Part of Speech），法语需额外标明阴阳性（m./f.）。
+2. 请严格返回 JSON 格式：{ "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }`;
 
                 try {
                     const res = await fetch(`${url}/chat/completions`, {
