@@ -257,6 +257,18 @@
             opacity: 1;
         }
 
+        .mic-icon.active {
+            color: #FF3B30;
+            opacity: 1;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.2); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+
         .clear-icon {
             position: absolute;
             right: 54px;
@@ -610,23 +622,23 @@
 
             <div id="textHighlightBtn" class="highlight-btn" onclick="applyHighlight()">高亮</div>
 
-            <header class="search-container">
-                <input type="text" class="main-input" placeholder="输入中文、English 或 Français..." oninput="toggleClearBtn(this)">
-                <div class="clear-icon" id="clearBtn" onclick="clearInput()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </div>
-                <div class="mic-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
-                </div>
-            </header>
+                <header class="search-container">
+                    <input type="text" class="main-input" placeholder="输入中文、English 或 Français..." oninput="toggleClearBtn(this)">
+                    <div class="clear-icon" id="clearBtn" onclick="clearInput()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </div>
+                    <div class="mic-icon" id="micBtn" onclick="toggleSpeechRecognition()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </div>
+                </header>
         </div>
 
         <!-- Review View -->
@@ -719,6 +731,8 @@
         let currentResultData = null;
         let reviewWords = [];
         let currentReviewIndex = 0;
+        let recognition = null;
+        let isListening = false;
 
         window.onload = () => {
             initResultCards();
@@ -726,10 +740,67 @@
             checkResumeReview();
             renderHistory();
             setupHighlightListener();
+            initSpeechRecognition();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js');
             }
         };
+
+        // Speech Recognition Logic
+        function initSpeechRecognition() {
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (window.SpeechRecognition) {
+                recognition = new window.SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                // 自动识别语言
+                recognition.lang = 'zh-CN'; // 默认设为中文，大部分系统会自动处理多语混输
+
+                recognition.onstart = () => {
+                    isListening = true;
+                    document.getElementById('micBtn').classList.add('active');
+                    showToast('正在聆听...');
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    const input = document.querySelector('.main-input');
+                    input.value = transcript;
+                    toggleClearBtn(input);
+                    // 触发搜索
+                    input.dispatchEvent(new KeyboardEvent('keypress', {'key': 'Enter'}));
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error', event.error);
+                    showToast('语音识别错误: ' + event.error, true);
+                    stopListening();
+                };
+
+                recognition.onend = () => {
+                    stopListening();
+                };
+            }
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                showToast('您的浏览器不支持语音识别', true);
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                // 尝试根据当前输入习惯动态调整语言（可选）
+                recognition.start();
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            document.getElementById('micBtn').classList.remove('active');
+        }
 
         // Highlight Logic
         function setupHighlightListener() {
@@ -1016,8 +1087,9 @@
                 const prompt = `你是一个精通中、英、法专家。
 输入：${text}。场景：${tones}。
 要求：
-1. 如果输入是单词，外语（英、法）必须包含词性（Part of Speech），法语需额外标明阴阳性（m./f.）。
-2. 请严格返回 JSON 格式：{ "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }`;
+1. 如果输入是中文，不要返回 zh 模块内容（设为空），仅返回英法结果。英法结果需包含：单词、音标、词性、1-2个例句，以及【词汇联想】（包含动词/形容词形式变换、近义词、反义词）。
+2. 如果输入是英/法，zh 模块需简洁返回中文释义。
+3. 请严格返回 JSON 格式：{ "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }`;
 
                 try {
                     const res = await fetch(`${url}/chat/completions`, {
