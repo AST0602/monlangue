@@ -565,6 +565,57 @@
             margin-top: 12px;
         }
 
+        .extra-info span {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-right: 4px;
+            font-size: 0.8rem;
+        }
+
+        /* Secondary Actions */
+        .card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #F2F2F7;
+        }
+
+        .action-btn {
+            background: #F2F2F7;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            background: #E8E8ED;
+            color: var(--text-primary);
+        }
+
+        .action-btn.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .secondary-content {
+            margin-top: 12px;
+            padding: 12px;
+            background: #F9F9FB;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .secondary-content.show {
+            display: block;
+        }
+
         .review-card-back .card-content {
             font-size: 0.95rem;
             color: var(--text-secondary);
@@ -1264,6 +1315,8 @@
                         </button>
                     </div>
                     <div class="card-content" contenteditable="true" onclick="event.stopPropagation()">等待输入...</div>
+                    <div class="secondary-content" id="secondary-${lang.code}" onclick="event.stopPropagation()"></div>
+                    <div class="card-actions" id="actions-${lang.code}" onclick="event.stopPropagation()"></div>
                 </article>
             `).join('');
         }
@@ -1414,40 +1467,31 @@
             // 收起键盘
             document.activeElement.blur();
 
-            // 智能检测输入是否包含中文
             const isChineseInput = /[\u4e00-\u9fa5]/.test(text);
-
             const key = localStorage.getItem('ai_api_key');
             const url = localStorage.getItem('ai_base_url');
             if (!key) { showToast('请先配置 API Key', true); toggleModal(true); return; }
 
-            // 先重置卡片状态：折叠并显示加载动画
+            // 重置状态
             document.querySelectorAll('.result-card').forEach(card => {
                 card.classList.remove('expanded');
-                const content = card.querySelector('.card-content');
-                content.innerHTML = '<div class="loading-shimmer"></div>';
+                card.querySelector('.card-content').innerHTML = '<div class="loading-shimmer"></div>';
+                card.querySelector('.secondary-content').innerHTML = '';
+                card.querySelector('.secondary-content').classList.remove('show');
+                card.querySelector('.card-actions').innerHTML = '';
             });
 
-            // 根据输入语言动态调整显示的卡片
-            enabledLanguages.forEach(lang => {
-                const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
-                if (lang.code === 'zh' && isChineseInput) {
-                    card.style.display = 'none';
-                } else {
-                    card.style.display = 'block';
-                }
-            });
-
-            const tones = Array.from(document.querySelectorAll('.tag-btn.active')).map(b => b.innerText).join('、');
+            // 初始请求提示词
             const prompt = `你是一个精通中、英、法专家。
-输入：${text}。场景：${tones}。
-要求：
-1. 如果输入是中文，不要返回 zh 模块内容（设为空），仅返回英法结果。
-2. 结果中禁止出现“音标、词性、例句、词汇联想”等中文标签名，也不要给例句和联想词加中文翻译。
-3. 补充信息（extra）请严格按照以下简写排版：
-   [音标] 词性 v. 动词形式 adj. 形容词形式 syn. 近义词 ant. 反义词 ex. 例句
-4. 如果输入是英/法，zh 模块需简洁返回中文释义。
-5. 请严格返回 JSON 格式：{ "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }`;
+输入：${text}。
+任务：
+1. 识别输入类型：word（单词）、phrase（短语）或 sentence（句子）。
+2. 如果是 word：仅返回翻译内容，并附带极简信息（音标、词性、法语阴阳性/单复数）。禁止返回例句、同反义词。
+3. 如果是 phrase：仅返回翻译内容。禁止返回例句、同反义词。
+4. 如果是 sentence：仅返回 Oral（口语）语气的翻译内容。
+5. 如果输入是中文，不返回 zh 模块内容。
+6. 严格返回 JSON：{ "type": "word|phrase|sentence", "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }
+补充信息格式：[音标] 词性 (m./f. pl.)`;
 
             try {
                 const res = await fetch(`${url}/chat/completions`, {
@@ -1461,22 +1505,35 @@
                 const data = await res.json();
                 let content = data.choices[0].message.content.replace(/```json\s?|\s?```/g, '').trim();
                 currentResultData = JSON.parse(content);
-                
+                const inputType = currentResultData.type;
+
                 enabledLanguages.forEach(lang => {
                     const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
                     const el = card.querySelector('.card-content');
+                    const actions = card.querySelector('.card-actions');
                     const d = currentResultData[lang.code];
                     
                     if (d && d.content) {
-                        const styledExtra = d.extra.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                        card.style.display = 'block';
                         el.innerHTML = `
                             <div style="font-weight:600;">${d.content}</div>
-                            <div class="extra-info">${styledExtra}</div>
+                            <div class="extra-info">${d.extra}</div>
                         `;
-                        // 搜索成功后自动展开有内容的卡片
                         card.classList.add('expanded');
+
+                        // 添加按钮
+                        let buttons = '';
+                        if (inputType === 'word') {
+                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'details')">更多形态/例句</button>`;
+                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'synonyms')">同/反义词</button>`;
+                        } else if (inputType === 'phrase') {
+                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'synonyms')">同/反义表达</button>`;
+                        } else if (inputType === 'sentence') {
+                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Formel')">Formel</button>`;
+                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Standard')">Standard</button>`;
+                        }
+                        actions.innerHTML = buttons;
                     } else {
-                        el.innerHTML = '';
                         card.style.display = 'none';
                     }
                 });
@@ -1489,6 +1546,53 @@
                 });
             } catch (err) {
                 document.querySelectorAll('.card-content').forEach(el => el.innerHTML = `<div style="color:#FF3B30;">错误: ${err.message}</div>`);
+            }
+        }
+
+        async function handleSecondarySearch(langCode, type, subType = '') {
+            const btn = event.target;
+            const originalText = document.querySelector('.main-input').value.trim();
+            const secondaryEl = document.getElementById(`secondary-${langCode}`);
+            const key = localStorage.getItem('ai_api_key');
+            const url = localStorage.getItem('ai_base_url');
+
+            btn.classList.add('loading');
+            secondaryEl.innerHTML = '<div class="loading-shimmer"></div>';
+            secondaryEl.classList.add('show');
+
+            let prompt = '';
+            if (type === 'details') {
+                prompt = `针对单词 "${originalText}" 的 ${langCode} 翻译，提供其：1. 名词/形容词/动词形态 2. 两个高质量例句。极简排版，不带中文说明。`;
+            } else if (type === 'synonyms') {
+                prompt = `针对内容 "${originalText}" 的 ${langCode} 翻译，提供 3-5 个同义词/近义词及反义词。格式：syn. xxx, xxx ant. xxx. 不带中文说明。`;
+            } else if (type === 'tone') {
+                prompt = `将 "${originalText}" 翻译为 ${langCode}，语气要求：${subType}。仅返回翻译结果文本，不带任何解释。`;
+            }
+
+            try {
+                const res = await fetch(`${url}/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                    body: JSON.stringify({
+                        model: localStorage.getItem('ai_model_name') || 'deepseek-chat',
+                        messages: [{ role: 'system', content: prompt }]
+                    })
+                });
+                const data = await res.json();
+                let result = data.choices[0].message.content.trim();
+                
+                if (type === 'tone') {
+                    // 对于语气切换，直接更新主内容
+                    document.querySelector(`.result-card[data-lang-code="${langCode}"] .card-content div:first-child`).innerText = result;
+                    secondaryEl.classList.remove('show');
+                } else {
+                    const styledResult = result.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                    secondaryEl.innerHTML = styledResult;
+                }
+            } catch (err) {
+                secondaryEl.innerHTML = `<div style="color:#FF3B30;">获取失败</div>`;
+            } finally {
+                btn.classList.remove('loading');
             }
         }
 
