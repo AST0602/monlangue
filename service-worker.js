@@ -1,9 +1,9 @@
-const CACHE_NAME = 'easytool-v2';
+const CACHE_NAME = 'easytool-v3';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  'https://cdn-icons-png.flaticon.com/512/2910/2910791.png'
+  './icon.png'
 ];
 
 // Install Service Worker
