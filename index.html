@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimalist Language Tool</title>
+    <link rel="icon" type="image/png" href="./icon.png">
+    <link rel="apple-touch-icon" href="./icon.png">
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F5F5F7">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -276,10 +278,19 @@
         .history-container {
             display: flex;
             gap: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 0;
             flex-wrap: wrap;
-            max-height: 80px;
-            overflow-y: auto;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+        }
+
+        .history-container.show {
+            max-height: 120px;
+            margin-bottom: 16px;
+            opacity: 1;
+            padding-top: 8px;
         }
 
         .history-tag {
@@ -581,10 +592,18 @@
                 <!-- Dynamic cards -->
             </main>
 
-            <nav class="mode-tags" style="margin-bottom: 12px;">
-                <button class="tag-btn" onclick="this.classList.toggle('active')">Formel</button>
-                <button class="tag-btn active" onclick="this.classList.toggle('active')">Standard</button>
-                <button class="tag-btn" onclick="this.classList.toggle('active')">Oral</button>
+            <nav class="mode-tags" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 12px;">
+                    <button class="tag-btn" onclick="this.classList.toggle('active')">Formel</button>
+                    <button class="tag-btn active" onclick="this.classList.toggle('active')">Standard</button>
+                    <button class="tag-btn" onclick="this.classList.toggle('active')">Oral</button>
+                </div>
+                <button class="icon-btn" onclick="toggleHistoryMenu()" style="padding: 6px; border-radius: 50%;" title="搜索历史">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </button>
             </nav>
 
             <div class="history-container" id="historyContainer"></div>
@@ -769,6 +788,10 @@
         // Input Helpers
         function toggleClearBtn(input) {
             document.getElementById('clearBtn').style.display = input.value ? 'flex' : 'none';
+        }
+
+        function toggleHistoryMenu() {
+            document.getElementById('historyContainer').classList.toggle('show');
         }
 
         function clearInput() {
