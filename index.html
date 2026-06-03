@@ -394,8 +394,9 @@
         /* Mic Button Outside */
         .floating-mic {
             position: fixed;
-            bottom: 120px;
-            right: 20px;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
             width: 64px;
             height: 64px;
             background: var(--text-primary);
@@ -414,7 +415,7 @@
         }
 
         .floating-mic:active {
-            transform: scale(0.9);
+            transform: translateX(-50%) scale(0.9);
             background: #FF3B30;
         }
 
@@ -424,9 +425,9 @@
         }
 
         @keyframes pulse-large {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+            0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); }
+            70% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); }
+            100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
         }
 
         /* Box Selection */
@@ -564,11 +565,19 @@
             margin-top: 12px;
         }
 
-        .extra-info span {
+        .review-card-back .card-content {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            text-align: left;
+            width: 100%;
+            cursor: text;
+        }
+
+        .review-card-back .card-content span {
             font-weight: 600;
             color: var(--text-primary);
             margin-right: 4px;
-            font-size: 0.8rem;
         }
 
         .highlight-btn {
@@ -794,19 +803,30 @@
             <div class="history-grid" id="historyGrid"></div>
         </div>
 
-        <!-- Box Selection Overlay -->
+        <!-- Box Selection Overlay (Review) -->
         <div class="box-overlay" id="boxOverlay">
             <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 12px;">选择复习卡片盒</h3>
             <p style="color: var(--text-secondary); margin-bottom: 32px;">您可以多选不同的场景进行针对性复习</p>
             <div class="box-grid" id="boxGrid">
-                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="Standard">Standard</div>
-                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="Formel">Formel</div>
-                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="Oral">Oral</div>
-                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="已收藏">所有收藏</div>
+                <!-- Dynamic boxes -->
             </div>
             <div style="margin-top: 60px; display: flex; gap: 16px;">
                 <button class="btn-secondary" onclick="document.getElementById('boxOverlay').style.display='none'">取消</button>
                 <button class="btn-primary" onclick="startReviewWithBoxes()">开始复习</button>
+            </div>
+        </div>
+
+        <!-- Box Assignment Modal (Starring) -->
+        <div class="modal-overlay" id="boxAssignmentOverlay">
+            <div class="modal">
+                <h2 class="modal-title">归类卡片</h2>
+                <div id="assignmentBoxGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;">
+                    <!-- Dynamic boxes -->
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeBoxAssignment()">取消</button>
+                    <button class="btn-primary" onclick="saveBoxAssignment()">确认</button>
+                </div>
             </div>
         </div>
 
@@ -847,7 +867,7 @@
                 <span>设置</span>
             </button>
             <div class="review-toggle" onclick="toggleReviewMode(true)">
-                <span>进入复习模式</span>
+                <span>复习</span>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -903,6 +923,7 @@
         let recognition = null;
         let isListening = false;
         let micTimer = null;
+        let pendingStarAction = null; // Store data when opening box assignment modal
 
         window.onload = () => {
             initResultCards();
@@ -912,13 +933,144 @@
             setupHighlightListener();
             initSpeechRecognition();
             setupMicLongPress();
+            initCustomBoxes();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js');
             }
         };
 
-        // Speech Recognition Logic
-        function initSpeechRecognition() {
+        function initCustomBoxes() {
+            let boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
+            if (boxes.length === 0) {
+                // Initial setup is empty as per user request (only "All" and "+")
+            }
+        }
+
+        function renderReviewBoxOverlay() {
+            const boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
+            const grid = document.getElementById('boxGrid');
+            let html = `
+                <div class="box-item selected" onclick="toggleBoxSelection(this)" data-box="all">
+                    <div style="font-weight:600;">所有</div>
+                </div>
+            `;
+            html += boxes.map(box => `
+                <div class="box-item" onclick="toggleBoxSelection(this)" data-box="${box}">
+                    <div style="font-weight:600;">${box}</div>
+                </div>
+            `).join('');
+            
+            html += `
+                <div class="box-item" onclick="createNewBox()" style="border-style: dashed; color: var(--text-secondary);">
+                    <div style="font-size: 1.5rem;">+</div>
+                </div>
+            `;
+            grid.innerHTML = html;
+        }
+
+        function toggleBoxSelection(el) {
+            if (el.getAttribute('data-box') === 'all') {
+                // If "All" is clicked, deselect others or just keep it selected
+                document.querySelectorAll('#boxGrid .box-item').forEach(item => item.classList.remove('selected'));
+                el.classList.add('selected');
+            } else {
+                document.querySelector('#boxGrid [data-box="all"]').classList.remove('selected');
+                el.classList.toggle('selected');
+                // If nothing selected, select "All"
+                if (document.querySelectorAll('#boxGrid .box-item.selected').length === 0) {
+                    document.querySelector('#boxGrid [data-box="all"]').classList.add('selected');
+                }
+            }
+        }
+
+        function createNewBox() {
+            const name = prompt("请输入新卡片盒名称：");
+            if (name && name.trim()) {
+                let boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
+                if (!boxes.includes(name.trim())) {
+                    boxes.push(name.trim());
+                    localStorage.setItem('custom_boxes', JSON.stringify(boxes));
+                    renderReviewBoxOverlay();
+                    renderAssignmentBoxGrid();
+                } else {
+                    alert("该名称已存在");
+                }
+            }
+        }
+
+        function renderAssignmentBoxGrid(selectedBoxes = []) {
+            const boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
+            const grid = document.getElementById('assignmentBoxGrid');
+            grid.innerHTML = boxes.map(box => `
+                <div class="box-item ${selectedBoxes.includes(box) ? 'selected' : ''}" onclick="this.classList.toggle('selected')" data-box="${box}">
+                    <div style="font-weight:500; font-size: 0.9rem;">${box}</div>
+                </div>
+            `).join('') + `
+                <div class="box-item" onclick="createNewBox(); renderAssignmentBoxGrid();" style="border-style: dashed; color: var(--text-secondary); padding: 12px;">
+                    <div style="font-size: 1rem;">+</div>
+                </div>
+            `;
+        }
+
+        async function toggleStar(langCode) {
+            if (!currentResultData || !currentResultData[langCode]) return;
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            const text = document.querySelector('.main-input').value.trim();
+            const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
+            
+            if (idx > -1) {
+                // Already starred, open assignment modal to edit or unstar
+                pendingStarAction = { langCode, text, vocabIndex: idx };
+                const currentBoxes = vocab[idx].boxes || [];
+                renderAssignmentBoxGrid(currentBoxes);
+                document.getElementById('boxAssignmentOverlay').style.display = 'flex';
+            } else {
+                // Not starred, open assignment modal to star
+                pendingStarAction = { langCode, text, vocabIndex: -1 };
+                renderAssignmentBoxGrid([]);
+                document.getElementById('boxAssignmentOverlay').style.display = 'flex';
+            }
+        }
+
+        function closeBoxAssignment() {
+            document.getElementById('boxAssignmentOverlay').style.display = 'none';
+            pendingStarAction = null;
+        }
+
+        function saveBoxAssignment() {
+            if (!pendingStarAction) return;
+            const { langCode, text, vocabIndex } = pendingStarAction;
+            const selectedBoxes = Array.from(document.querySelectorAll('#assignmentBoxGrid .box-item.selected')).map(el => el.getAttribute('data-box'));
+            
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            const btn = document.querySelector(`.result-card[data-lang-code="${langCode}"] .star-btn`);
+
+            if (selectedBoxes.length === 0 && vocabIndex > -1) {
+                // Unstar if no boxes selected and it was already starred
+                vocab.splice(vocabIndex, 1);
+                btn.classList.remove('active');
+            } else if (selectedBoxes.length > 0) {
+                if (vocabIndex > -1) {
+                    // Update existing
+                    vocab[vocabIndex].boxes = selectedBoxes;
+                } else {
+                    // Add new
+                    vocab.push({
+                        originalText: text, 
+                        lang: langCode,
+                        translatedText: currentResultData[langCode].content,
+                        extraInfo: currentResultData[langCode].extra,
+                        boxes: selectedBoxes,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                btn.classList.add('active');
+            }
+
+            localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+            syncToCloud();
+            closeBoxAssignment();
+        }
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (window.SpeechRecognition) {
                 recognition = new window.SpeechRecognition();
@@ -1150,32 +1302,9 @@
             return null;
         }
 
-        async function toggleStar(langCode) {
-            if (!currentResultData || !currentResultData[langCode]) return;
-            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
-            const text = document.querySelector('.main-input').value.trim();
-            const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
-            const btn = document.querySelector(`.result-card[data-lang-code="${langCode}"] .star-btn`);
-            const tones = Array.from(document.querySelectorAll('.tag-btn.active')).map(b => b.innerText).join('、');
-
-            if (idx > -1) {
-                vocab.splice(idx, 1);
-                btn.classList.remove('active');
-            } else {
-                vocab.push({
-                    originalText: text, lang: langCode,
-                    translatedText: currentResultData[langCode].content,
-                    extraInfo: currentResultData[langCode].extra + ` [box: ${tones}]`,
-                    timestamp: new Date().toISOString()
-                });
-                btn.classList.add('active');
-            }
-            localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
-            syncToCloud();
-        }
-
         async function toggleReviewMode(show) {
             if (show) {
+                renderReviewBoxOverlay();
                 document.getElementById('boxOverlay').style.display = 'flex';
             } else {
                 document.getElementById('mainView').style.display = 'block';
@@ -1190,7 +1319,7 @@
         }
 
         async function startReviewWithBoxes() {
-            const selectedBoxes = Array.from(document.querySelectorAll('.box-item.selected')).map(el => el.getAttribute('data-box'));
+            const selectedBoxes = Array.from(document.querySelectorAll('#boxGrid .box-item.selected')).map(el => el.getAttribute('data-box'));
             if (selectedBoxes.length === 0) {
                 showToast('请至少选择一个卡片盒', true);
                 return;
@@ -1205,15 +1334,10 @@
                 return;
             }
 
-            // 过滤逻辑：如果选了"已收藏"，则包含所有；否则按场景过滤
-            if (!selectedBoxes.includes('已收藏')) {
+            // 过滤逻辑
+            if (!selectedBoxes.includes('all')) {
                 vocab = vocab.filter(v => {
-                    // 假设 vocab 中的 tone 信息存储在 extraInfo 中，或者我们需要在收藏时保存它
-                    // 这里简化逻辑：检查 translatedText 或 extraInfo 是否包含场景关键词
-                    return selectedBoxes.some(box => 
-                        (v.extraInfo && v.extraInfo.includes(box)) || 
-                        (v.originalText && v.originalText.includes(box))
-                    );
+                    return v.boxes && v.boxes.some(box => selectedBoxes.includes(box));
                 });
             }
 
@@ -1242,13 +1366,16 @@
             document.getElementById('reviewDetails').innerHTML = `
                 <div class="translation-item">
                     <div style="font-weight:600; font-size: 1.2rem; margin-bottom: 8px;">${word.translatedText}</div>
-                    <div class="extra-info">${styledExtra}</div>
+                    <div class="card-content" onclick="event.stopPropagation()">${styledExtra}</div>
                 </div>
             `;
             document.getElementById('reviewCardInner').classList.remove('flipped');
         }
 
-        function flipReviewCard() { document.getElementById('reviewCardInner').classList.toggle('flipped'); }
+        function flipReviewCard() { 
+            // Only flip if not clicking on card-content
+            document.getElementById('reviewCardInner').classList.toggle('flipped'); 
+        }
         function nextReviewWord(e) {
             e.stopPropagation();
             if (currentReviewIndex < reviewWords.length - 1) {
@@ -1284,6 +1411,9 @@
         function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
 
         async function handleSearch(text) {
+            // 收起键盘
+            document.activeElement.blur();
+
             // 智能检测输入是否包含中文
             const isChineseInput = /[\u4e00-\u9fa5]/.test(text);
 
