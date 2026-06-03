@@ -286,55 +286,186 @@
             opacity: 0.8;
         }
 
-        /* History Tags */
-        .history-container {
+        /* History Overlay */
+        .history-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(245, 245, 247, 0.8);
+            backdrop-filter: blur(20px);
+            z-index: 1500;
+            display: none;
+            flex-direction: column;
+            padding: 60px 24px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .history-overlay.show {
             display: flex;
-            gap: 8px;
-            margin-bottom: 0;
-            flex-wrap: wrap;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0;
         }
 
-        .history-container.show {
-            max-height: 120px;
-            margin-bottom: 16px;
-            opacity: 1;
-            padding-top: 8px;
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+            margin-top: 32px;
+            overflow-y: auto;
         }
 
-        .history-tag {
-            padding: 4px 12px;
-            background: rgba(0,0,0,0.03);
-            border-radius: 8px;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+        .history-item {
+            background: var(--card-color);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            font-size: 1rem;
+            color: var(--text-primary);
+            position: relative;
+            cursor: pointer;
+            transition: var(--transition);
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            text-align: center;
+            min-height: 100px;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .history-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        }
+
+        .history-item .delete-history {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.05);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .history-item:hover .delete-history {
+            opacity: 1;
+        }
+
+        /* Result Cards */
+        .result-card {
+            background-color: var(--card-color);
+            padding: 20px 32px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            position: relative;
+            transition: var(--transition);
+            min-height: 60px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .result-card .card-content {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .result-card.expanded .card-content {
+            max-height: 1000px;
+            opacity: 1;
+            margin-top: 12px;
+        }
+
+        .result-card .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Mic Button Outside */
+        .floating-mic {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            width: 64px;
+            height: 64px;
+            background: var(--text-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 1000;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: var(--transition);
+        }
+
+        .floating-mic:active {
+            transform: scale(0.9);
+            background: #FF3B30;
+        }
+
+        .floating-mic.listening {
+            background: #FF3B30;
+            animation: pulse-large 1.5s infinite;
+        }
+
+        @keyframes pulse-large {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+        }
+
+        /* Box Selection */
+        .box-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            padding: 40px;
+            align-items: center;
+        }
+
+        .box-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 40px;
+        }
+
+        .box-item {
+            padding: 24px;
+            border: 2px solid #E8E8ED;
+            border-radius: 20px;
+            text-align: center;
             cursor: pointer;
             transition: var(--transition);
         }
 
-        .history-tag:hover {
-            background: rgba(0,0,0,0.06);
-            color: var(--text-primary);
+        .box-item.selected {
+            border-color: var(--text-primary);
+            background: #F5F5F7;
         }
-
-        .history-tag .delete-history {
-            opacity: 0.3;
-            font-size: 1.1rem;
-            line-height: 1;
-        }
-
-        .history-tag .delete-history:hover {
-            opacity: 1;
-            color: #FF3B30;
-        }
-
-        /* Category Buttons */
         .mode-tags {
             display: flex;
             gap: 12px;
@@ -424,6 +555,20 @@
             letter-spacing: 0.01em;
             word-break: break-word;
             outline: none;
+        }
+
+        .extra-info {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-top: 12px;
+        }
+
+        .extra-info span {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-right: 4px;
+            font-size: 0.8rem;
         }
 
         .highlight-btn {
@@ -618,27 +763,51 @@
                 </button>
             </nav>
 
-            <div class="history-container" id="historyContainer"></div>
-
             <div id="textHighlightBtn" class="highlight-btn" onclick="applyHighlight()">高亮</div>
 
                 <header class="search-container">
-                    <input type="text" class="main-input" placeholder="输入中文、English 或 Français..." oninput="toggleClearBtn(this)">
+                    <input type="text" class="main-input" placeholder="输入内容开始查询..." oninput="toggleClearBtn(this)">
                     <div class="clear-icon" id="clearBtn" onclick="clearInput()">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
                     </div>
-                    <div class="mic-icon" id="micBtn" onclick="toggleSpeechRecognition()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                            <line x1="12" y1="19" x2="12" y2="23"></line>
-                            <line x1="8" y1="23" x2="16" y2="23"></line>
-                        </svg>
-                    </div>
                 </header>
+        </div>
+
+        <div class="floating-mic" id="micBtn">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+        </div>
+
+        <!-- History Overlay -->
+        <div class="history-overlay" id="historyOverlay">
+            <div style="display:flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h3 style="font-size: 1.5rem; font-weight: 700;">搜索历史</h3>
+                <button class="icon-btn" onclick="toggleHistoryMenu()" style="background: rgba(0,0,0,0.05); padding: 8px 16px; border-radius: 100px;">关闭</button>
+            </div>
+            <div class="history-grid" id="historyGrid"></div>
+        </div>
+
+        <!-- Box Selection Overlay -->
+        <div class="box-overlay" id="boxOverlay">
+            <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 12px;">选择复习卡片盒</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 32px;">您可以多选不同的场景进行针对性复习</p>
+            <div class="box-grid" id="boxGrid">
+                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="Standard">Standard</div>
+                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="Formel">Formel</div>
+                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="Oral">Oral</div>
+                <div class="box-item" onclick="this.classList.toggle('selected')" data-box="已收藏">所有收藏</div>
+            </div>
+            <div style="margin-top: 60px; display: flex; gap: 16px;">
+                <button class="btn-secondary" onclick="document.getElementById('boxOverlay').style.display='none'">取消</button>
+                <button class="btn-primary" onclick="startReviewWithBoxes()">开始复习</button>
+            </div>
         </div>
 
         <!-- Review View -->
@@ -733,6 +902,7 @@
         let currentReviewIndex = 0;
         let recognition = null;
         let isListening = false;
+        let micTimer = null;
 
         window.onload = () => {
             initResultCards();
@@ -741,6 +911,7 @@
             renderHistory();
             setupHighlightListener();
             initSpeechRecognition();
+            setupMicLongPress();
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js');
             }
@@ -753,13 +924,12 @@
                 recognition = new window.SpeechRecognition();
                 recognition.continuous = false;
                 recognition.interimResults = false;
-                // 自动识别语言
-                recognition.lang = 'zh-CN'; // 默认设为中文，大部分系统会自动处理多语混输
+                recognition.lang = 'zh-CN'; 
 
                 recognition.onstart = () => {
                     isListening = true;
-                    document.getElementById('micBtn').classList.add('active');
-                    showToast('正在聆听...');
+                    document.getElementById('micBtn').classList.add('listening');
+                    showToast('正在录音...', false);
                 };
 
                 recognition.onresult = (event) => {
@@ -767,13 +937,14 @@
                     const input = document.querySelector('.main-input');
                     input.value = transcript;
                     toggleClearBtn(input);
-                    // 触发搜索
-                    input.dispatchEvent(new KeyboardEvent('keypress', {'key': 'Enter'}));
+                    handleSearch(transcript);
                 };
 
                 recognition.onerror = (event) => {
                     console.error('Speech recognition error', event.error);
-                    showToast('语音识别错误: ' + event.error, true);
+                    if (event.error !== 'no-speech') {
+                        showToast('语音识别错误: ' + event.error, true);
+                    }
                     stopListening();
                 };
 
@@ -783,23 +954,37 @@
             }
         }
 
-        function toggleSpeechRecognition() {
-            if (!recognition) {
-                showToast('您的浏览器不支持语音识别', true);
-                return;
-            }
+        function setupMicLongPress() {
+            const micBtn = document.getElementById('micBtn');
+            
+            const startHandler = (e) => {
+                e.preventDefault();
+                if (!recognition) {
+                    showToast('您的浏览器不支持语音识别', true);
+                    return;
+                }
+                if (!isListening) {
+                    recognition.start();
+                }
+            };
 
-            if (isListening) {
-                recognition.stop();
-            } else {
-                // 尝试根据当前输入习惯动态调整语言（可选）
-                recognition.start();
-            }
+            const endHandler = (e) => {
+                e.preventDefault();
+                if (isListening) {
+                    recognition.stop();
+                }
+            };
+
+            micBtn.addEventListener('mousedown', startHandler);
+            micBtn.addEventListener('mouseup', endHandler);
+            micBtn.addEventListener('touchstart', startHandler);
+            micBtn.addEventListener('touchend', endHandler);
+            micBtn.addEventListener('mouseleave', endHandler);
         }
 
         function stopListening() {
             isListening = false;
-            document.getElementById('micBtn').classList.remove('active');
+            document.getElementById('micBtn').classList.remove('listening');
         }
 
         // Highlight Logic
@@ -862,7 +1047,11 @@
         }
 
         function toggleHistoryMenu() {
-            document.getElementById('historyContainer').classList.toggle('show');
+            const overlay = document.getElementById('historyOverlay');
+            overlay.classList.toggle('show');
+            if (overlay.classList.contains('show')) {
+                renderHistory();
+            }
         }
 
         function clearInput() {
@@ -875,9 +1064,9 @@
         // History Logic
         function renderHistory() {
             const history = JSON.parse(localStorage.getItem('search_history') || '[]');
-            const container = document.getElementById('historyContainer');
-            container.innerHTML = history.map((text, i) => `
-                <div class="history-tag" onclick="useHistory('${text}')">
+            const grid = document.getElementById('historyGrid');
+            grid.innerHTML = history.map((text, i) => `
+                <div class="history-item" onclick="useHistory('${text}')">
                     <span>${text}</span>
                     <span class="delete-history" onclick="deleteHistory(event, ${i})">×</span>
                 </div>
@@ -905,23 +1094,24 @@
             const input = document.querySelector('.main-input');
             input.value = text;
             toggleClearBtn(input);
+            toggleHistoryMenu(); // Close overlay
             // Trigger search
-            input.dispatchEvent(new KeyboardEvent('keypress', {'key': 'Enter'}));
+            handleSearch(text);
         }
 
         function initResultCards() {
             const grid = document.getElementById('resultsGrid');
             grid.innerHTML = enabledLanguages.map(lang => `
-                <article class="result-card" data-lang-code="${lang.code}">
+                <article class="result-card" data-lang-code="${lang.code}" onclick="this.classList.toggle('expanded')">
                     <div class="card-header">
                         <span class="lang-label">${lang.label}</span>
-                        <button class="star-btn" onclick="toggleStar('${lang.code}')">
+                        <button class="star-btn" onclick="event.stopPropagation(); toggleStar('${lang.code}')">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                             </svg>
                         </button>
                     </div>
-                    <div class="card-content" contenteditable="true">等待输入...</div>
+                    <div class="card-content" contenteditable="true" onclick="event.stopPropagation()">等待输入...</div>
                 </article>
             `).join('');
         }
@@ -966,6 +1156,7 @@
             const text = document.querySelector('.main-input').value.trim();
             const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
             const btn = document.querySelector(`.result-card[data-lang-code="${langCode}"] .star-btn`);
+            const tones = Array.from(document.querySelectorAll('.tag-btn.active')).map(b => b.innerText).join('、');
 
             if (idx > -1) {
                 vocab.splice(idx, 1);
@@ -974,7 +1165,7 @@
                 vocab.push({
                     originalText: text, lang: langCode,
                     translatedText: currentResultData[langCode].content,
-                    extraInfo: currentResultData[langCode].extra,
+                    extraInfo: currentResultData[langCode].extra + ` [box: ${tones}]`,
                     timestamp: new Date().toISOString()
                 });
                 btn.classList.add('active');
@@ -985,40 +1176,73 @@
 
         async function toggleReviewMode(show) {
             if (show) {
-                showToast('同步云端词库...');
-                await fetchFromCloud();
-                const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
-                if (vocab.length === 0) {
-                    showToast('词库为空，请先收藏单词', true);
-                    return;
-                }
-                reviewWords = vocab.sort(() => 0.5 - Math.random()).slice(0, 20);
-                document.getElementById('mainView').style.display = 'none';
-                document.getElementById('reviewView').style.display = 'flex';
-                document.querySelector('.bottom-controls').style.display = 'none';
-                renderReviewCard();
+                document.getElementById('boxOverlay').style.display = 'flex';
             } else {
                 document.getElementById('mainView').style.display = 'block';
                 document.getElementById('reviewView').style.display = 'none';
                 document.querySelector('.bottom-controls').style.display = 'flex';
-                localStorage.setItem('review_checkpoint', JSON.stringify({
-                    index: currentReviewIndex, words: reviewWords, timestamp: Date.now()
-                }));
+                if (reviewWords.length > 0) {
+                    localStorage.setItem('review_checkpoint', JSON.stringify({
+                        index: currentReviewIndex, words: reviewWords, timestamp: Date.now()
+                    }));
+                }
             }
+        }
+
+        async function startReviewWithBoxes() {
+            const selectedBoxes = Array.from(document.querySelectorAll('.box-item.selected')).map(el => el.getAttribute('data-box'));
+            if (selectedBoxes.length === 0) {
+                showToast('请至少选择一个卡片盒', true);
+                return;
+            }
+
+            showToast('同步云端词库...');
+            await fetchFromCloud();
+            let vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            
+            if (vocab.length === 0) {
+                showToast('词库为空，请先收藏单词', true);
+                return;
+            }
+
+            // 过滤逻辑：如果选了"已收藏"，则包含所有；否则按场景过滤
+            if (!selectedBoxes.includes('已收藏')) {
+                vocab = vocab.filter(v => {
+                    // 假设 vocab 中的 tone 信息存储在 extraInfo 中，或者我们需要在收藏时保存它
+                    // 这里简化逻辑：检查 translatedText 或 extraInfo 是否包含场景关键词
+                    return selectedBoxes.some(box => 
+                        (v.extraInfo && v.extraInfo.includes(box)) || 
+                        (v.originalText && v.originalText.includes(box))
+                    );
+                });
+            }
+
+            if (vocab.length === 0) {
+                showToast('所选盒子内没有卡片', true);
+                return;
+            }
+
+            reviewWords = vocab.sort(() => 0.5 - Math.random()).slice(0, 20);
+            currentReviewIndex = 0;
+            
+            document.getElementById('boxOverlay').style.display = 'none';
+            document.getElementById('mainView').style.display = 'none';
+            document.getElementById('reviewView').style.display = 'flex';
+            document.querySelector('.bottom-controls').style.display = 'none';
+            renderReviewCard();
         }
 
         function renderReviewCard() {
             const word = reviewWords[currentReviewIndex];
             document.getElementById('reviewWord').innerText = word.originalText;
             document.getElementById('reviewProgress').innerText = `${currentReviewIndex + 1} / ${reviewWords.length}`;
+            
+            const styledExtra = word.extraInfo.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+            
             document.getElementById('reviewDetails').innerHTML = `
                 <div class="translation-item">
-                    <span class="lang-label">释义 (${word.lang})</span>
-                    <div style="font-weight:600;">${word.translatedText}</div>
-                </div>
-                <div class="translation-item">
-                    <span class="lang-label">例句</span>
-                    <div style="color:var(--text-secondary);">${word.extraInfo}</div>
+                    <div style="font-weight:600; font-size: 1.2rem; margin-bottom: 8px;">${word.translatedText}</div>
+                    <div class="extra-info">${styledExtra}</div>
                 </div>
             `;
             document.getElementById('reviewCardInner').classList.remove('flipped');
@@ -1059,63 +1283,90 @@
 
         function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
 
-        document.querySelector('.main-input').onkeypress = async (e) => {
-            if (e.key === 'Enter' && e.target.value.trim()) {
-                const text = e.target.value.trim();
-                addHistory(text); // Add to history
-                
-                // 智能检测输入是否包含中文
-                const isChineseInput = /[\u4e00-\u9fa5]/.test(text);
+        async function handleSearch(text) {
+            // 智能检测输入是否包含中文
+            const isChineseInput = /[\u4e00-\u9fa5]/.test(text);
 
-                const key = localStorage.getItem('ai_api_key');
-                const url = localStorage.getItem('ai_base_url');
-                if (!key) { showToast('请先配置 API Key', true); toggleModal(true); return; }
+            const key = localStorage.getItem('ai_api_key');
+            const url = localStorage.getItem('ai_base_url');
+            if (!key) { showToast('请先配置 API Key', true); toggleModal(true); return; }
 
-                document.querySelectorAll('.card-content').forEach(el => el.innerHTML = '<div class="loading-shimmer"></div>');
+            // 先重置卡片状态：折叠并显示加载动画
+            document.querySelectorAll('.result-card').forEach(card => {
+                card.classList.remove('expanded');
+                const content = card.querySelector('.card-content');
+                content.innerHTML = '<div class="loading-shimmer"></div>';
+            });
+
+            // 根据输入语言动态调整显示的卡片
+            enabledLanguages.forEach(lang => {
+                const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
+                if (lang.code === 'zh' && isChineseInput) {
+                    card.style.display = 'none';
+                } else {
+                    card.style.display = 'block';
+                }
+            });
+
+            const tones = Array.from(document.querySelectorAll('.tag-btn.active')).map(b => b.innerText).join('、');
+            const prompt = `你是一个精通中、英、法专家。
+输入：${text}。场景：${tones}。
+要求：
+1. 如果输入是中文，不要返回 zh 模块内容（设为空），仅返回英法结果。
+2. 结果中禁止出现“音标、词性、例句、词汇联想”等中文标签名，也不要给例句和联想词加中文翻译。
+3. 补充信息（extra）请严格按照以下简写排版：
+   [音标] 词性 v. 动词形式 adj. 形容词形式 syn. 近义词 ant. 反义词 ex. 例句
+4. 如果输入是英/法，zh 模块需简洁返回中文释义。
+5. 请严格返回 JSON 格式：{ "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }`;
+
+            try {
+                const res = await fetch(`${url}/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                    body: JSON.stringify({
+                        model: localStorage.getItem('ai_model_name') || 'deepseek-chat',
+                        messages: [{ role: 'system', content: prompt }]
+                    })
+                });
+                const data = await res.json();
+                let content = data.choices[0].message.content.replace(/```json\s?|\s?```/g, '').trim();
+                currentResultData = JSON.parse(content);
                 
-                // 根据输入语言动态调整显示的卡片
                 enabledLanguages.forEach(lang => {
                     const card = document.querySelector(`.result-card[data-lang-code="${lang.code}"]`);
-                    if (lang.code === 'zh' && isChineseInput) {
-                        card.style.display = 'none';
+                    const el = card.querySelector('.card-content');
+                    const d = currentResultData[lang.code];
+                    
+                    if (d && d.content) {
+                        const styledExtra = d.extra.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                        el.innerHTML = `
+                            <div style="font-weight:600;">${d.content}</div>
+                            <div class="extra-info">${styledExtra}</div>
+                        `;
+                        // 搜索成功后自动展开有内容的卡片
+                        card.classList.add('expanded');
                     } else {
-                        card.style.display = 'block';
+                        el.innerHTML = '';
+                        card.style.display = 'none';
                     }
                 });
 
-                const tones = Array.from(document.querySelectorAll('.tag-btn.active')).map(b => b.innerText).join('、');
-                const prompt = `你是一个精通中、英、法专家。
-输入：${text}。场景：${tones}。
-要求：
-1. 如果输入是中文，不要返回 zh 模块内容（设为空），仅返回英法结果。英法结果需包含：单词、音标、词性、1-2个例句，以及【词汇联想】（包含动词/形容词形式变换、近义词、反义词）。
-2. 如果输入是英/法，zh 模块需简洁返回中文释义。
-3. 请严格返回 JSON 格式：{ "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }`;
+                const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+                enabledLanguages.forEach(l => {
+                    const isStarred = vocab.some(v => v.originalText === text && v.lang === l.code);
+                    const starBtn = document.querySelector(`.result-card[data-lang-code="${l.code}"] .star-btn`);
+                    if (starBtn) starBtn.classList.toggle('active', isStarred);
+                });
+            } catch (err) {
+                document.querySelectorAll('.card-content').forEach(el => el.innerHTML = `<div style="color:#FF3B30;">错误: ${err.message}</div>`);
+            }
+        }
 
-                try {
-                    const res = await fetch(`${url}/chat/completions`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-                        body: JSON.stringify({
-                            model: localStorage.getItem('ai_model_name') || 'deepseek-chat',
-                            messages: [{ role: 'system', content: prompt }]
-                        })
-                    });
-                    const data = await res.json();
-                    let content = data.choices[0].message.content.replace(/```json\s?|\s?```/g, '').trim();
-                    currentResultData = JSON.parse(content);
-                    enabledLanguages.forEach(lang => {
-                        const el = document.querySelector(`.result-card[data-lang-code="${lang.code}"] .card-content`);
-                        const d = currentResultData[lang.code];
-                        el.innerHTML = `<div style="font-weight:500;">${d.content}</div><div style="font-size:0.9rem;color:var(--text-secondary);">${d.extra}</div>`;
-                    });
-                    const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
-                    enabledLanguages.forEach(l => {
-                        const isStarred = vocab.some(v => v.originalText === text && v.lang === l.code);
-                        document.querySelector(`.result-card[data-lang-code="${l.code}"] .star-btn`).classList.toggle('active', isStarred);
-                    });
-                } catch (err) {
-                    document.querySelectorAll('.card-content').forEach(el => el.innerHTML = `<div style="color:#FF3B30;">错误: ${err.message}</div>`);
-                }
+        document.querySelector('.main-input').onkeypress = async (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                const text = e.target.value.trim();
+                addHistory(text); 
+                handleSearch(text);
             }
         };
 
