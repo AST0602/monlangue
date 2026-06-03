@@ -811,9 +811,9 @@
 
             <nav class="mode-tags" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; gap: 12px;">
-                    <button class="tag-btn" onclick="this.classList.toggle('active')">Formel</button>
-                    <button class="tag-btn active" onclick="this.classList.toggle('active')">Standard</button>
-                    <button class="tag-btn" onclick="this.classList.toggle('active')">Oral</button>
+                    <button class="tag-btn" onclick="toggleTag(this)" data-pos="v.">v.</button>
+                    <button class="tag-btn" onclick="toggleTag(this)" data-pos="n.">n.</button>
+                    <button class="tag-btn" onclick="toggleTag(this)" data-pos="adj.">adj.</button>
                 </div>
                 <button class="icon-btn" onclick="toggleHistoryMenu()" style="padding: 6px; border-radius: 50%;" title="搜索历史">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -891,21 +891,34 @@
                     </svg>
                     <span>返回</span>
                 </button>
+                <div style="display: flex; gap: 8px; background: #E8E8ED; padding: 4px; border-radius: 100px;">
+                    <button id="cardViewBtn" class="icon-btn active" onclick="switchReviewView('card')" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 100px;">卡片</button>
+                    <button id="listViewBtn" class="icon-btn" onclick="switchReviewView('list')" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 100px;">列表</button>
+                </div>
                 <div class="review-progress" id="reviewProgress">1 / 0</div>
             </div>
-            <div class="review-card-container" onclick="flipReviewCard()">
-                <div class="review-card-inner" id="reviewCardInner">
-                    <div class="review-card-front">
-                        <h2 id="reviewWord">加载中...</h2>
-                    </div>
-                    <div class="review-card-back" id="reviewDetails">
-                        <!-- Details -->
+
+            <!-- Card View Container -->
+            <div id="cardViewContainer" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <div class="review-card-container" onclick="flipReviewCard()">
+                    <div class="review-card-inner" id="reviewCardInner">
+                        <div class="review-card-front">
+                            <h2 id="reviewWord">加载中...</h2>
+                        </div>
+                        <div class="review-card-back" id="reviewDetails">
+                            <!-- Details -->
+                        </div>
                     </div>
                 </div>
+                <div class="review-controls">
+                    <button class="nav-btn" onclick="prevReviewWord(event)">上一个</button>
+                    <button class="nav-btn" onclick="nextReviewWord(event)">下一个</button>
+                </div>
             </div>
-            <div class="review-controls">
-                <button class="nav-btn" onclick="prevReviewWord(event)">上一个</button>
-                <button class="nav-btn" onclick="nextReviewWord(event)">下一个</button>
+
+            <!-- List View Container -->
+            <div id="listViewContainer" style="width: 100%; display: none; flex-direction: column; gap: 16px; overflow-y: auto; flex: 1; padding-bottom: 40px;">
+                <!-- List items -->
             </div>
         </div>
 
@@ -1228,15 +1241,27 @@
             range.surroundContents(mark);
             
             // Auto sync to cloud if starred
-            const card = mark.closest('.result-card');
+            const card = mark.closest('[data-lang-code]') || mark.closest('[data-review-index]');
             if (card) {
-                const langCode = card.getAttribute('data-lang-code');
                 const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
-                const text = document.querySelector('.main-input').value.trim();
-                const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
-                
-                if (idx > -1) {
-                    vocab[idx].translatedText = card.querySelector('.card-content').innerHTML;
+                let text = '';
+                let langCode = '';
+
+                if (card.hasAttribute('data-lang-code')) {
+                    langCode = card.getAttribute('data-lang-code');
+                    text = document.querySelector('.main-input').value.trim();
+                } else {
+                    const idx = parseInt(card.getAttribute('data-review-index')) || currentReviewIndex;
+                    const word = reviewWords[idx];
+                    text = word.originalText;
+                    langCode = word.lang;
+                }
+
+                const vIdx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
+                if (vIdx > -1) {
+                    // Update content with highlight
+                    vocab[vIdx].translatedText = card.querySelector('.card-content div:first-child').innerHTML;
+                    vocab[vIdx].extraInfo = card.querySelector('.extra-info').innerHTML;
                     localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
                     syncToCloud();
                 }
@@ -1373,6 +1398,53 @@
             }
         }
 
+        function switchReviewView(mode) {
+            const cardContainer = document.getElementById('cardViewContainer');
+            const listContainer = document.getElementById('listViewContainer');
+            const cardBtn = document.getElementById('cardViewBtn');
+            const listBtn = document.getElementById('listViewBtn');
+            const progress = document.getElementById('reviewProgress');
+
+            if (mode === 'card') {
+                cardContainer.style.display = 'flex';
+                listContainer.style.display = 'none';
+                cardBtn.classList.add('active');
+                cardBtn.style.backgroundColor = 'white';
+                listBtn.classList.remove('active');
+                listBtn.style.backgroundColor = 'transparent';
+                progress.style.display = 'block';
+                renderReviewCard();
+            } else {
+                cardContainer.style.display = 'none';
+                listContainer.style.display = 'flex';
+                listBtn.classList.add('active');
+                listBtn.style.backgroundColor = 'white';
+                cardBtn.classList.remove('active');
+                cardBtn.style.backgroundColor = 'transparent';
+                progress.style.display = 'none';
+                renderListView();
+            }
+        }
+
+        function renderListView() {
+            const container = document.getElementById('listViewContainer');
+            container.innerHTML = reviewWords.map((word, index) => {
+                const styledExtra = word.extraInfo.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                return `
+                    <div class="result-card expanded" style="cursor: default;" data-review-index="${index}">
+                        <div class="card-header">
+                            <span class="lang-label" style="font-size: 1.2rem; color: var(--text-primary);">${word.originalText}</span>
+                            <span class="lang-label">${word.lang}</span>
+                        </div>
+                        <div class="card-content" onclick="event.stopPropagation()">
+                            <div style="font-weight:600; margin-bottom: 8px;">${word.translatedText}</div>
+                            <div class="extra-info">${styledExtra}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function startReviewWithBoxes() {
             const selectedBoxes = Array.from(document.querySelectorAll('#boxGrid .box-item.selected')).map(el => el.getAttribute('data-box'));
             if (selectedBoxes.length === 0) {
@@ -1408,7 +1480,7 @@
             document.getElementById('mainView').style.display = 'none';
             document.getElementById('reviewView').style.display = 'flex';
             document.querySelector('.bottom-controls').style.display = 'none';
-            renderReviewCard();
+            switchReviewView('card'); // 默认进入卡片视图
         }
 
         function renderReviewCard() {
@@ -1419,9 +1491,11 @@
             const styledExtra = word.extraInfo.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
             
             document.getElementById('reviewDetails').innerHTML = `
-                <div class="translation-item">
-                    <div style="font-weight:600; font-size: 1.2rem; margin-bottom: 8px;">${word.translatedText}</div>
-                    <div class="card-content" onclick="event.stopPropagation()">${styledExtra}</div>
+                <div class="translation-item" data-review-index="${currentReviewIndex}">
+                    <div class="card-content" onclick="event.stopPropagation()">
+                        <div style="font-weight:600; font-size: 1.2rem; margin-bottom: 8px;">${word.translatedText}</div>
+                        <div class="extra-info">${styledExtra}</div>
+                    </div>
                 </div>
             `;
             document.getElementById('reviewCardInner').classList.remove('flipped');
@@ -1465,6 +1539,12 @@
 
         function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
 
+        function toggleTag(btn) {
+            const wasActive = btn.classList.contains('active');
+            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+            if (!wasActive) btn.classList.add('active');
+        }
+
         async function handleSearch(text) {
             // 收起键盘
             document.activeElement.blur();
@@ -1473,6 +1553,10 @@
             const key = localStorage.getItem('ai_api_key');
             const url = localStorage.getItem('ai_base_url');
             if (!key) { showToast('请先配置 API Key', true); toggleModal(true); return; }
+
+            // 获取选中的词性限定
+            const activeTag = document.querySelector('.tag-btn.active');
+            const posConstraint = activeTag ? activeTag.getAttribute('data-pos') : 'none';
 
             // 重置状态
             document.querySelectorAll('.result-card').forEach(card => {
@@ -1486,12 +1570,17 @@
             // 初始请求提示词
             const prompt = `你是一个精通中、英、法专家。
 输入：${text}。
+词性限定：${posConstraint} (如果是 none 则不限定)。
 任务：
 1. 识别输入类型：word（单词）、phrase（短语）或 sentence（句子）。
-2. 如果是 word：仅返回翻译内容，并附带极简信息（音标、词性、法语阴阳性/单复数）。禁止返回例句、同反义词。
+2. 如果是 word：
+   - 优先满足“词性限定”要求。
+   - 返回翻译内容，附带极简信息（音标、词性、法语阴阳性/单复数）。
+   - 法语名词/形容词必须显示性数变化，例如：suffisant, e; traducteur, trice。
+   - 禁止返回例句、同反义词。
 3. 如果是 phrase：仅返回翻译内容。禁止返回例句、同反义词。
-4. 如果是 sentence：仅返回 Oral（口语）语气的翻译内容。
-5. 如果输入是中文，不返回 zh 模块内容。
+4. 如果是 sentence：仅返回 Oral 语气的翻译内容。
+5. 如果输入是中文，zh 模块仅返回输入的中文词语本身，不带音标或额外按钮。
 6. 严格返回 JSON：{ "type": "word|phrase|sentence", "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }
 补充信息格式：[音标] 词性 (m./f. pl.)`;
 
@@ -1517,24 +1606,37 @@
                     
                     if (d && d.content) {
                         card.style.display = 'block';
-                        el.innerHTML = `
-                            <div style="font-weight:600;">${d.content}</div>
-                            <div class="extra-info">${d.extra}</div>
-                        `;
-                        card.classList.add('expanded');
-
-                        // 添加按钮
-                        let buttons = '';
-                        if (inputType === 'word') {
-                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'details')">更多形态/例句</button>`;
-                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'synonyms')">同/反义词</button>`;
-                        } else if (inputType === 'phrase') {
-                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'synonyms')">同/反义表达</button>`;
-                        } else if (inputType === 'sentence') {
-                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Formel')">Formel</button>`;
-                            buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Standard')">Standard</button>`;
+                        
+                        if (lang.code === 'zh') {
+                            // 中文区块极简显示
+                            el.innerHTML = `<div style="font-weight:600;">${d.content}</div>`;
+                            actions.innerHTML = ''; // 移除底部按钮
+                        } else {
+                            el.innerHTML = `
+                                <div style="font-weight:600;">${d.content}</div>
+                                <div class="extra-info">${d.extra}</div>
+                            `;
+                            
+                            // 添加拆分后的按钮
+                            let buttons = '';
+                            if (inputType === 'word') {
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'v.')">v.</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'n.')">n.</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'adj.')">adj.</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'syn.')">syn.</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'ant.')">ant.</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'ex:')">ex:</button>`;
+                            } else if (inputType === 'phrase') {
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'syn.')">syn.</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'ant.')">ant.</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'ex:')">ex:</button>`;
+                            } else if (inputType === 'sentence') {
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Formel')">Formel</button>`;
+                                buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Standard')">Standard</button>`;
+                            }
+                            actions.innerHTML = buttons;
                         }
-                        actions.innerHTML = buttons;
+                        card.classList.add('expanded');
                     } else {
                         card.style.display = 'none';
                     }
@@ -1563,10 +1665,14 @@
             secondaryEl.classList.add('show');
 
             let prompt = '';
-            if (type === 'details') {
-                prompt = `针对单词 "${originalText}" 的 ${langCode} 翻译，提供其：1. 名词/形容词/动词形态 2. 两个高质量例句。极简排版，不带中文说明。`;
-            } else if (type === 'synonyms') {
-                prompt = `针对内容 "${originalText}" 的 ${langCode} 翻译，提供 3-5 个同义词/近义词及反义词。格式：syn. xxx, xxx ant. xxx. 不带中文说明。`;
+            if (['v.', 'n.', 'adj.'].includes(type)) {
+                prompt = `将 "${originalText}" 翻译为 ${langCode}，且词性必须为 ${type}。如果是法语名词/形容词需显示性数变化。仅返回翻译结果文本，不带任何解释或音标。`;
+            } else if (type === 'syn.') {
+                prompt = `提供内容 "${originalText}" 在 ${langCode} 翻译中的 3-5 个同义词/近义词。仅返回结果，格式为: syn. xxx, xxx. 不带中文说明。`;
+            } else if (type === 'ant.') {
+                prompt = `提供内容 "${originalText}" 在 ${langCode} 翻译中的反义词。仅返回结果，格式为: ant. xxx, xxx. 不带中文说明。`;
+            } else if (type === 'ex:') {
+                prompt = `针对 "${originalText}" 的 ${langCode} 翻译提供两个高质量例句。格式为: ex. [例句]。不带中文说明。`;
             } else if (type === 'tone') {
                 prompt = `将 "${originalText}" 翻译为 ${langCode}，语气要求：${subType}。仅返回翻译结果文本，不带任何解释。`;
             }
@@ -1583,8 +1689,8 @@
                 const data = await res.json();
                 let result = data.choices[0].message.content.trim();
                 
-                if (type === 'tone') {
-                    // 对于语气切换，直接更新主内容
+                if (['v.', 'n.', 'adj.', 'tone'].includes(type)) {
+                    // 对于词性切换或语气切换，直接更新主内容
                     document.querySelector(`.result-card[data-lang-code="${langCode}"] .card-content div:first-child`).innerText = result;
                     secondaryEl.classList.remove('show');
                 } else {
