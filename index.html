@@ -810,10 +810,16 @@
             </main>
 
             <nav class="mode-tags" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; gap: 12px;">
-                    <button class="tag-btn" onclick="toggleTag(this)" data-pos="v.">v.</button>
-                    <button class="tag-btn" onclick="toggleTag(this)" data-pos="n.">n.</button>
-                    <button class="tag-btn" onclick="toggleTag(this)" data-pos="adj.">adj.</button>
+                <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 4px; padding-right: 8px; border-right: 1px solid #E8E8ED;">
+                        <button class="tag-btn" onclick="toggleTag(this, 'pos')" data-pos="v.">v.</button>
+                        <button class="tag-btn" onclick="toggleTag(this, 'pos')" data-pos="n.">n.</button>
+                        <button class="tag-btn" onclick="toggleTag(this, 'pos')" data-pos="adj.">adj.</button>
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="tag-btn" onclick="toggleTag(this, 'lang')" data-lang="FR">FR</button>
+                        <button class="tag-btn" onclick="toggleTag(this, 'lang')" data-lang="EN">EN</button>
+                    </div>
                 </div>
                 <button class="icon-btn" onclick="toggleHistoryMenu()" style="padding: 6px; border-radius: 50%;" title="搜索历史">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -922,14 +928,60 @@
             </div>
         </div>
 
+        <!-- Manual Add Modal -->
+        <div class="modal-overlay" id="manualAddOverlay">
+            <div class="modal" style="max-width: 500px;">
+                <h2 class="modal-title">手动添加卡片</h2>
+                <div class="form-group">
+                    <label>原词 / 文本</label>
+                    <input type="text" id="manualOriginal" class="form-control" placeholder="输入要学习的内容...">
+                </div>
+                <div class="form-group">
+                    <label>语言</label>
+                    <select id="manualLang" class="form-control">
+                        <option value="fr">法语 (FR)</option>
+                        <option value="en">英语 (EN)</option>
+                        <option value="zh">中文 (ZH)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>对应翻译 / 解释</label>
+                    <input type="text" id="manualTranslated" class="form-control" placeholder="输入翻译内容...">
+                </div>
+                <div class="form-group">
+                    <label>补充信息 (例句、形态等)</label>
+                    <textarea id="manualExtra" class="form-control" rows="4" placeholder="[音标] 词性 v. xxx ex. xxx"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>归类到卡片盒</label>
+                    <div id="manualBoxGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                        <!-- Dynamic boxes -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="toggleManualAdd(false)">取消</button>
+                    <button class="btn-primary" onclick="saveManualCard()">保存到词库</button>
+                </div>
+            </div>
+        </div>
+
         <footer class="bottom-controls">
-            <button class="icon-btn" onclick="toggleModal(true)">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-                <span>设置</span>
-            </button>
+            <div style="display: flex; gap: 12px;">
+                <button class="icon-btn" onclick="toggleModal(true)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>设置</span>
+                </button>
+                <button class="icon-btn" onclick="toggleManualAdd(true)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>手动添加</span>
+                </button>
+            </div>
             <div class="review-toggle" onclick="toggleReviewMode(true)">
                 <span>复习</span>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1016,6 +1068,53 @@
             }
         };
 
+        function toggleManualAdd(show) {
+            const overlay = document.getElementById('manualAddOverlay');
+            overlay.style.display = show ? 'flex' : 'none';
+            if (show) {
+                // 清空表单
+                document.getElementById('manualOriginal').value = '';
+                document.getElementById('manualTranslated').value = '';
+                document.getElementById('manualExtra').value = '';
+                // 渲染盒子选择列表
+                const boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
+                const grid = document.getElementById('manualBoxGrid');
+                grid.innerHTML = boxes.map(box => `
+                    <div class="box-item" onclick="this.classList.toggle('selected')" data-box="${box}">
+                        <div style="font-weight:500; font-size: 0.85rem;">${box}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function saveManualCard() {
+            const originalText = document.getElementById('manualOriginal').value.trim();
+            const lang = document.getElementById('manualLang').value;
+            const translatedText = document.getElementById('manualTranslated').value.trim();
+            const extraInfo = document.getElementById('manualExtra').value.trim();
+            const selectedBoxes = Array.from(document.querySelectorAll('#manualBoxGrid .box-item.selected')).map(el => el.getAttribute('data-box'));
+
+            if (!originalText || !translatedText) {
+                showToast('请填写原词和翻译内容', true);
+                return;
+            }
+
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            vocab.push({
+                originalText,
+                lang,
+                translatedText,
+                extraInfo,
+                boxes: selectedBoxes,
+                timestamp: new Date().toISOString()
+            });
+
+            localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+            await syncToCloud();
+            toggleManualAdd(false);
+            showToast('已手动添加至词库');
+        }
+
         async function manualSync() {
             showToast('正在同步数据...');
             const remoteData = await fetchFromCloud();
@@ -1044,7 +1143,8 @@
             `;
             html += boxes.map(box => `
                 <div class="box-item" onclick="toggleBoxSelection(this)" data-box="${box}">
-                    <div style="font-weight:600;">${box}</div>
+                    <div style="font-weight:600; margin-bottom: 4px;">${box}</div>
+                    <div class="delete-box" onclick="deleteBox(event, '${box}')" style="font-size: 0.7rem; color: #FF3B30; opacity: 0.6;">删除</div>
                 </div>
             `).join('');
             
@@ -1054,6 +1154,29 @@
                 </div>
             `;
             grid.innerHTML = html;
+        }
+
+        function deleteBox(event, boxName) {
+            event.stopPropagation();
+            if (!confirm(`确定要删除卡片盒 "${boxName}" 吗？该操作不会删除卡片，但会解除卡片的归类。`)) return;
+
+            // 从自定义盒子列表中删除
+            let boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
+            boxes = boxes.filter(b => b !== boxName);
+            localStorage.setItem('custom_boxes', JSON.stringify(boxes));
+
+            // 从所有词条的归类中移除该盒子
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            vocab.forEach(item => {
+                if (item.boxes) {
+                    item.boxes = item.boxes.filter(b => b !== boxName);
+                }
+            });
+            localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+
+            renderReviewBoxOverlay();
+            syncToCloud();
+            showToast('卡片盒已删除');
         }
 
         function toggleBoxSelection(el) {
@@ -1594,9 +1717,10 @@
 
         function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
 
-        function toggleTag(btn) {
+        function toggleTag(btn, group) {
             const wasActive = btn.classList.contains('active');
-            document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+            const selector = group === 'pos' ? '[data-pos]' : '[data-lang]';
+            document.querySelectorAll(`.tag-btn${selector}`).forEach(b => b.classList.remove('active'));
             if (!wasActive) btn.classList.add('active');
         }
 
@@ -1610,8 +1734,12 @@
             if (!key) { showToast('请先配置 API Key', true); toggleModal(true); return; }
 
             // 获取选中的词性限定
-            const activeTag = document.querySelector('.tag-btn.active');
-            const posConstraint = activeTag ? activeTag.getAttribute('data-pos') : 'none';
+            const activePosTag = document.querySelector('.tag-btn[data-pos].active');
+            const posConstraint = activePosTag ? activePosTag.getAttribute('data-pos') : 'none';
+
+            // 获取选中的语言限定
+            const activeLangTag = document.querySelector('.tag-btn[data-lang].active');
+            const langConstraint = activeLangTag ? activeLangTag.getAttribute('data-lang') : 'none';
 
             // 重置状态
             document.querySelectorAll('.result-card').forEach(card => {
@@ -1624,12 +1752,14 @@
 
             // 初始请求提示词
             const prompt = `你是一个精通中、英、法专家。
-输入：${text}。
-词性限定：${posConstraint} (如果是 none 则不限定)。
+输入内容：${text}。
+强制词性限定：${posConstraint} (none表示不限定)。
+输入源语言限定：${langConstraint} (如果是 none 则自动识别；如果是 FR 则将输入视为法语，如果是 EN 则视为英语，即便该词在两语中拼写相同)。
+
 任务：
 1. 识别输入类型：word（单词）、phrase（短语）或 sentence（句子）。
 2. 如果是 word：
-   - 优先满足“词性限定”要求。
+   - 必须严格遵守“强制词性限定”和“输入源语言限定”。
    - 返回翻译内容，附带极简信息（音标、词性、法语阴阳性/单复数）。
    - 法语名词/形容词必须显示性数变化，例如：suffisant, e; traducteur, trice。
    - 禁止返回例句、同反义词。
