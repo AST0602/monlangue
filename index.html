@@ -1117,12 +1117,22 @@
 
         async function manualSync() {
             showToast('正在同步数据...');
-            const remoteData = await fetchFromCloud();
-            if (remoteData) {
-                showToast('同步完成');
-            } else {
-                // 如果云端没数据，尝试把本地的传上去
-                await syncToCloud();
+            try {
+                const remoteData = await fetchFromCloud();
+                if (remoteData) {
+                    // 同步成功后，刷新相关 UI
+                    initResultCards();
+                    renderReviewBoxOverlay();
+                    renderHistory();
+                    showToast('同步完成');
+                } else {
+                    // 如果云端没数据，尝试把本地的传上去
+                    await syncToCloud();
+                    showToast('已同步本地数据至云端');
+                }
+            } catch (e) {
+                console.error('Manual sync failed', e);
+                showToast('同步失败: ' + e.message, true);
             }
         }
 
@@ -1495,15 +1505,22 @@
             `).join('');
         }
 
+        function getSyncUrl() {
+            let baseUrl = localStorage.getItem('ai_base_url') || '';
+            if (!baseUrl) return null;
+            // 移除末尾斜杠和 /v1 路径，确保获取 Worker 根路径
+            let rootUrl = baseUrl.replace(/\/v1\/?$/, "").replace(/\/+$/, "");
+            return `${rootUrl}/sync`;
+        }
+
         async function syncToCloud() {
             const apiKey = localStorage.getItem('ai_api_key');
-            const baseUrl = localStorage.getItem('ai_base_url');
+            const syncUrl = getSyncUrl();
             const vocab = localStorage.getItem('my_vocabulary') || '[]';
             const boxes = localStorage.getItem('custom_boxes') || '[]';
             
-            if (!apiKey || !baseUrl || !baseUrl.includes('workers.dev')) return;
+            if (!apiKey || !syncUrl) return;
 
-            const syncUrl = `${baseUrl.split('/v1')[0]}/sync`;
             const payload = {
                 vocabulary: JSON.parse(vocab),
                 boxes: JSON.parse(boxes),
@@ -1516,21 +1533,29 @@
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (res.ok) console.log('Sync success');
-            } catch (e) { console.error('Sync failed', e); }
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                console.log('Sync to cloud success');
+            } catch (e) { 
+                console.error('Sync failed', e);
+                throw e;
+            }
         }
 
         async function fetchFromCloud() {
             const apiKey = localStorage.getItem('ai_api_key');
-            const baseUrl = localStorage.getItem('ai_base_url');
-            if (!apiKey || !baseUrl || !baseUrl.includes('workers.dev')) return null;
+            const syncUrl = getSyncUrl();
+            if (!apiKey || !syncUrl) return null;
 
-            const syncUrl = `${baseUrl.split('/v1')[0]}/sync`;
             try {
                 const res = await fetch(syncUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+                if (!res.ok) {
+                    if (res.status === 404) return null; // 云端尚无数据
+                    throw new Error(`HTTP ${res.status}`);
+                }
                 const remoteData = await res.json();
                 
                 if (remoteData && typeof remoteData === 'object') {
+                    let hasChanges = false;
                     // 合并词库
                     if (Array.isArray(remoteData.vocabulary)) {
                         const localVocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
@@ -1540,23 +1565,32 @@
                             const exists = mergedVocab.findIndex(lv => lv.originalText === rv.originalText && lv.lang === rv.lang);
                             if (exists === -1) {
                                 mergedVocab.push(rv);
+                                hasChanges = true;
                             } else if (new Date(rv.timestamp) > new Date(mergedVocab[exists].timestamp)) {
                                 mergedVocab[exists] = rv;
+                                hasChanges = true;
                             }
                         });
-                        localStorage.setItem('my_vocabulary', JSON.stringify(mergedVocab));
+                        if (hasChanges) localStorage.setItem('my_vocabulary', JSON.stringify(mergedVocab));
                     }
 
                     // 合并盒子
                     if (Array.isArray(remoteData.boxes)) {
                         const localBoxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
+                        const initialLen = localBoxes.length;
                         const mergedBoxes = Array.from(new Set([...localBoxes, ...remoteData.boxes]));
-                        localStorage.setItem('custom_boxes', JSON.stringify(mergedBoxes));
+                        if (mergedBoxes.length !== initialLen) {
+                            localStorage.setItem('custom_boxes', JSON.stringify(mergedBoxes));
+                            hasChanges = true;
+                        }
                     }
                     
                     return remoteData;
                 }
-            } catch (e) { console.error('Fetch failed', e); }
+            } catch (e) { 
+                console.error('Fetch failed', e);
+                throw e;
+            }
             return null;
         }
 
