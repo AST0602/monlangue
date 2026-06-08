@@ -1100,11 +1100,13 @@
             }
 
             const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            const translations = {};
+            translations[lang] = { content: translatedText, extra: extraInfo };
+
             vocab.push({
                 originalText,
                 lang,
-                translatedText,
-                extraInfo,
+                translations,
                 boxes: selectedBoxes,
                 timestamp: new Date().toISOString()
             });
@@ -1271,16 +1273,27 @@
                 vocab.splice(vocabIndex, 1);
                 btn.classList.remove('active');
             } else if (selectedBoxes.length > 0) {
+                // 收集所有语言的翻译数据
+                const translations = {};
+                enabledLanguages.forEach(l => {
+                    if (currentResultData[l.code]) {
+                        translations[l.code] = {
+                            content: currentResultData[l.code].content,
+                            extra: currentResultData[l.code].extra
+                        };
+                    }
+                });
+
                 if (vocabIndex > -1) {
                     // Update existing
                     vocab[vocabIndex].boxes = selectedBoxes;
+                    vocab[vocabIndex].translations = translations; 
                 } else {
                     // Add new
                     vocab.push({
                         originalText: text, 
                         lang: langCode,
-                        translatedText: currentResultData[langCode].content,
-                        extraInfo: currentResultData[langCode].extra,
+                        translations: translations,
                         boxes: selectedBoxes,
                         timestamp: new Date().toISOString()
                     });
@@ -1417,8 +1430,14 @@
                 const vIdx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
                 if (vIdx > -1) {
                     // Update content with highlight
-                    vocab[vIdx].translatedText = card.querySelector('.card-content div:first-child').innerHTML;
-                    vocab[vIdx].extraInfo = card.querySelector('.extra-info').innerHTML;
+                    if (vocab[vIdx].translations && vocab[vIdx].translations[langCode]) {
+                        vocab[vIdx].translations[langCode].content = card.querySelector('.card-content div:first-child').innerHTML;
+                        vocab[vIdx].translations[langCode].extra = card.querySelector('.extra-info').innerHTML;
+                    } else {
+                        // 兼容旧数据
+                        vocab[vIdx].translatedText = card.querySelector('.card-content div:first-child').innerHTML;
+                        vocab[vIdx].extraInfo = card.querySelector('.extra-info').innerHTML;
+                    }
                     localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
                     syncToCloud();
                 }
@@ -1641,20 +1660,82 @@
         function renderListView() {
             const container = document.getElementById('listViewContainer');
             container.innerHTML = reviewWords.map((word, index) => {
-                const styledExtra = word.extraInfo.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                let translationsHtml = '';
+                if (word.translations) {
+                    Object.keys(word.translations).forEach(lang => {
+                        const t = word.translations[lang];
+                        const styledExtra = (t.extra || '').replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                        translationsHtml += `
+                            <div class="translation-item" style="margin-top: 12px; border-bottom: 1px solid #F2F2F7; padding-bottom: 12px;">
+                                <div class="lang-label">${lang.toUpperCase()}</div>
+                                <div style="font-weight:600; margin-bottom: 4px;" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'content', this)">${t.content}</div>
+                                <div class="extra-info" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'extra', this)">${styledExtra}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    // 兼容旧数据
+                    const styledExtra = (word.extraInfo || '').replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                    translationsHtml = `
+                        <div class="translation-item" style="margin-top: 12px;">
+                            <div class="lang-label">${word.lang.toUpperCase()}</div>
+                            <div style="font-weight:600; margin-bottom: 4px;" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'content', this)">${word.translatedText}</div>
+                            <div class="extra-info" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'extra', this)">${styledExtra}</div>
+                        </div>
+                    `;
+                }
+
                 return `
                     <div class="result-card expanded" style="cursor: default;" data-review-index="${index}">
                         <div class="card-header">
                             <span class="lang-label" style="font-size: 1.2rem; color: var(--text-primary);">${word.originalText}</span>
-                            <span class="lang-label">${word.lang}</span>
+                            <button class="icon-btn" onclick="deleteCard(${index})" style="color: #FF3B30; padding: 4px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
                         </div>
                         <div class="card-content" onclick="event.stopPropagation()">
-                            <div style="font-weight:600; margin-bottom: 8px;">${word.translatedText}</div>
-                            <div class="extra-info">${styledExtra}</div>
+                            ${translationsHtml}
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function deleteCard(index) {
+            if (!confirm('确定要删除这张卡片吗？')) return;
+            const word = reviewWords[index];
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            const vIdx = vocab.findIndex(v => v.originalText === word.originalText && v.lang === word.lang);
+            
+            if (vIdx > -1) {
+                vocab.splice(vIdx, 1);
+                localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+                syncToCloud();
+                reviewWords.splice(index, 1);
+                renderListView();
+                showToast('已删除卡片');
+            }
+        }
+
+        function editCardContent(index, lang, type, el) {
+            const word = reviewWords[index];
+            const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
+            const vIdx = vocab.findIndex(v => v.originalText === word.originalText && v.lang === word.lang);
+            
+            if (vIdx > -1) {
+                if (vocab[vIdx].translations) {
+                    if (type === 'content') vocab[vIdx].translations[lang].content = el.innerText;
+                    else vocab[vIdx].translations[lang].extra = el.innerText;
+                } else {
+                    // 兼容旧数据
+                    if (type === 'content') vocab[vIdx].translatedText = el.innerText;
+                    else vocab[vIdx].extraInfo = el.innerText;
+                }
+                localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
+                syncToCloud();
+                // 同时更新当前复习列表中的引用
+                reviewWords[index] = vocab[vIdx];
+            }
         }
 
         async function startReviewWithBoxes() {
@@ -1700,13 +1781,34 @@
             document.getElementById('reviewWord').innerText = word.originalText;
             document.getElementById('reviewProgress').innerText = `${currentReviewIndex + 1} / ${reviewWords.length}`;
             
-            const styledExtra = word.extraInfo.replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
-            
-            document.getElementById('reviewDetails').innerHTML = `
-                <div class="translation-item" data-review-index="${currentReviewIndex}">
-                    <div class="card-content" onclick="event.stopPropagation()">
+            let translationsHtml = '';
+            if (word.translations) {
+                Object.keys(word.translations).forEach(lang => {
+                    const t = word.translations[lang];
+                    const styledExtra = (t.extra || '').replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                    translationsHtml += `
+                        <div class="translation-item" style="margin-bottom: 16px; border-bottom: 1px solid #F2F2F7; padding-bottom: 12px;">
+                            <div class="lang-label" style="font-size: 0.7rem; opacity: 0.6; margin-bottom: 4px;">${lang.toUpperCase()}</div>
+                            <div style="font-weight:600; font-size: 1.1rem; margin-bottom: 4px;">${t.content}</div>
+                            <div class="extra-info" style="font-size: 0.85rem;">${styledExtra}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                // 兼容旧数据
+                const styledExtra = (word.extraInfo || '').replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                translationsHtml = `
+                    <div class="translation-item">
                         <div style="font-weight:600; font-size: 1.2rem; margin-bottom: 8px;">${word.translatedText}</div>
-                        <div class="extra-info">${styledExtra}</div>
+                        <div class="card-content" onclick="event.stopPropagation()">${styledExtra}</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('reviewDetails').innerHTML = `
+                <div class="review-details-content" data-review-index="${currentReviewIndex}" style="text-align: left; width: 100%;">
+                    <div class="card-content" onclick="event.stopPropagation()">
+                        ${translationsHtml}
                     </div>
                 </div>
             `;
