@@ -1914,6 +1914,12 @@
                         messages: [{ role: 'system', content: prompt }]
                     })
                 });
+                
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`API 请求失败: ${res.status} ${errorText}`);
+                }
+
                 const data = await res.json();
                 let content = data.choices[0].message.content.replace(/```json\s?|\s?```/g, '').trim();
                 currentResultData = JSON.parse(content);
@@ -1970,7 +1976,9 @@
                     if (starBtn) starBtn.classList.toggle('active', isStarred);
                 });
             } catch (err) {
+                console.error('Search error:', err);
                 document.querySelectorAll('.card-content').forEach(el => el.innerHTML = `<div style="color:#FF3B30;">错误: ${err.message}</div>`);
+                showToast('搜索出错: ' + err.message, true);
             }
         }
 
