@@ -36,7 +36,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            padding: 20px 20px 40px 20px;
+            padding: 20px 20px 180px 20px; /* Increased bottom padding for fixed search area */
             overflow-x: hidden;
         }
 
@@ -53,7 +53,6 @@
             display: flex;
             flex-direction: column;
             flex: 1;
-            overflow: hidden;
         }
 
         .results-grid {
@@ -62,8 +61,39 @@
             flex-direction: column;
             gap: 20px;
             margin-bottom: 24px;
-            overflow-y: auto;
             padding-bottom: 20px;
+        }
+
+        /* Fixed Bottom Search Area */
+        .bottom-search-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(245, 245, 247, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+            border-top: 1px solid rgba(0,0,0,0.05);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .bottom-search-area .search-inner {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
         }
 
         /* Review View */
@@ -214,15 +244,6 @@
             cursor: pointer;
         }
 
-        /* Top Search Area */
-        .search-container {
-            position: sticky;
-            bottom: 0;
-            background: var(--bg-color);
-            padding-top: 10px;
-            z-index: 100;
-        }
-
         .main-input {
             width: 100%;
             padding: 16px 54px 16px 20px;
@@ -340,8 +361,8 @@
         }
 
         .lang-flag-btn.active {
-            background: var(--text-primary);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: rgba(44, 44, 46, 0.1); /* Softened background */
+            box-shadow: inset 0 0 0 1.5px var(--text-primary); /* Precise border highlight */
         }
 
         .lang-label {
@@ -815,27 +836,98 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 2000;
         }
 
         .modal {
             background: var(--card-color);
-            padding: 32px;
+            padding: 24px;
             border-radius: 24px;
             width: 90%;
-            max-width: 400px;
+            max-width: 440px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .preview-card {
+            background: #F9F9FB;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .preview-section {
+            margin-bottom: 16px;
+        }
+
+        .preview-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .preview-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .preview-content {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            outline: none;
+            word-break: break-word;
+        }
+
+        .preview-extra {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            outline: none;
+        }
+
+        .preview-note {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: #F2F2F7;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            outline: none;
+            min-height: 40px;
+        }
+
+        .preview-note b {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .preview-note mark {
+            background-color: #FFD60A;
+            color: inherit;
+            border-radius: 4px;
+            padding: 0 2px;
         }
 
         .modal-title {
             font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
             color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .form-group {
@@ -920,44 +1012,48 @@
                 <!-- Dynamic cards -->
             </main>
 
-            <nav class="mode-tags" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; gap: 8px;">
-                    <div class="pos-filter-container">
-                        <button class="pos-toggle-btn" id="posToggleBtn" onclick="togglePosPanel(event)">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            <div class="bottom-search-area" id="bottomSearchArea">
+                <div class="search-inner">
+                    <nav class="mode-tags" style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div style="display: flex; gap: 8px;">
+                            <div class="pos-filter-container">
+                                <button class="pos-toggle-btn" id="posToggleBtn" onclick="togglePosPanel(event)">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                                    </svg>
+                                </button>
+                                <div class="pos-panel" id="posPanel">
+                                    <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="v.">v. 动词</button>
+                                    <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="n.">n. 名词</button>
+                                    <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="adj.">adj. 形容词</button>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="lang-flag-btn" onclick="toggleTag(this, 'lang')" data-lang="FR" title="法语优先">🇫🇷</button>
+                                <button class="lang-flag-btn" onclick="toggleTag(this, 'lang')" data-lang="EN" title="英语优先">🇬🇧</button>
+                            </div>
+                        </div>
+                        <button class="icon-btn" onclick="toggleHistoryMenu()" style="padding: 6px; border-radius: 50%;" title="搜索历史">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
                         </button>
-                        <div class="pos-panel" id="posPanel">
-                            <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="v.">v. 动词</button>
-                            <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="n.">n. 名词</button>
-                            <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="adj.">adj. 形容词</button>
+                    </nav>
+
+                    <div id="textHighlightBtn" class="highlight-btn" onclick="applyHighlight()">高亮</div>
+
+                    <header class="search-container">
+                        <input type="text" class="main-input" placeholder="输入内容开始查询..." oninput="toggleClearBtn(this)">
+                        <div class="clear-icon" id="clearBtn" onclick="clearInput()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                         </div>
-                    </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="lang-flag-btn" onclick="toggleTag(this, 'lang')" data-lang="FR" title="法语优先">🇫🇷</button>
-                        <button class="lang-flag-btn" onclick="toggleTag(this, 'lang')" data-lang="EN" title="英语优先">🇬🇧</button>
-                    </div>
+                    </header>
                 </div>
-                <button class="icon-btn" onclick="toggleHistoryMenu()" style="padding: 6px; border-radius: 50%;" title="搜索历史">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                </button>
-            </nav>
-
-            <div id="textHighlightBtn" class="highlight-btn" onclick="applyHighlight()">高亮</div>
-
-                <header class="search-container">
-                    <input type="text" class="main-input" placeholder="输入内容开始查询..." oninput="toggleClearBtn(this)">
-                    <div class="clear-icon" id="clearBtn" onclick="clearInput()">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </div>
-                </header>
+            </div>
         </div>
 
         <!-- History Overlay -->
@@ -983,15 +1079,51 @@
         </div>
 
         <!-- Box Assignment Modal (Starring) -->
+        <div class="modal-overlay" id="cardPreviewOverlay">
+            <div class="modal">
+                <div class="modal-title">
+                    <span id="previewLangFlag">🇫🇷</span>
+                    <span>预览并收藏</span>
+                </div>
+                
+                <div class="preview-card">
+                    <div class="preview-section">
+                        <span class="preview-label">词汇 / 句子</span>
+                        <div id="previewContent" class="preview-content" contenteditable="true"></div>
+                    </div>
+                    <div class="preview-section">
+                        <span class="preview-label">音标 / 词性</span>
+                        <div id="previewExtra" class="preview-extra" contenteditable="true"></div>
+                    </div>
+                    <div class="preview-section">
+                        <span class="preview-label">注释</span>
+                        <div id="previewNote" class="preview-note" contenteditable="true" onkeydown="handleNoteKeydown(event)"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>归类到卡片盒</label>
+                    <div id="assignmentBoxGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 0;">
+                        <!-- Dynamic boxes -->
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeCardPreview()">取消</button>
+                    <button class="btn-primary" onclick="saveBoxAssignment()">确认加入卡片盒</button>
+                </div>
+            </div>
+        </div>
+
         <div class="modal-overlay" id="boxAssignmentOverlay">
             <div class="modal">
                 <h2 class="modal-title">归类卡片</h2>
-                <div id="assignmentBoxGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;">
+                <div id="simpleAssignmentBoxGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;">
                     <!-- Dynamic boxes -->
                 </div>
                 <div class="modal-actions">
                     <button class="btn-secondary" onclick="closeBoxAssignment()">取消</button>
-                    <button class="btn-primary" onclick="saveBoxAssignment()">确认</button>
+                    <button class="btn-primary" onclick="saveSimpleBoxAssignment()">确认</button>
                 </div>
             </div>
         </div>
@@ -1197,7 +1329,21 @@
                 // 清空表单
                 document.getElementById('manualOriginal').value = '';
                 document.getElementById('manualPhonetic').value = '';
-                document.getElementById('manualNote').value = '';
+                
+                // 将注释框改为 contenteditable 并清空
+                const noteEl = document.getElementById('manualNote');
+                if (noteEl && noteEl.tagName === 'INPUT') {
+                    const div = document.createElement('div');
+                    div.id = 'manualNote';
+                    div.className = 'form-control';
+                    div.style.minHeight = '60px';
+                    div.contentEditable = 'true';
+                    div.onkeydown = handleNoteKeydown;
+                    noteEl.replaceWith(div);
+                }
+                const noteDiv = document.getElementById('manualNote');
+                if (noteDiv) noteDiv.innerHTML = '';
+
                 // 渲染盒子选择列表
                 const boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
                 const grid = document.getElementById('manualBoxGrid');
@@ -1213,7 +1359,8 @@
             const originalText = document.getElementById('manualOriginal').value.trim();
             const lang = document.getElementById('manualLang').value;
             const phonetic = document.getElementById('manualPhonetic').value.trim();
-            const note = document.getElementById('manualNote').value.trim();
+            const noteEl = document.getElementById('manualNote');
+            const note = noteEl.innerHTML.trim(); // 使用 innerHTML 支持富文本
             const selectedBoxes = Array.from(document.querySelectorAll('#manualBoxGrid .box-item.selected')).map(el => el.getAttribute('data-box'));
 
             if (!originalText) {
@@ -1242,6 +1389,17 @@
             showToast('已保存至本地');
 
             syncToCloud().catch(e => console.error('背景同步失败', e));
+        }
+
+        function handleNoteKeydown(e) {
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                document.execCommand('bold', false, null);
+            }
+            if (e.ctrlKey && e.key === 'h') {
+                e.preventDefault();
+                document.execCommand('hiliteColor', false, '#FFD60A');
+            }
         }
 
         async function manualSync() {
@@ -1351,7 +1509,9 @@
         function renderAssignmentBoxGrid(selectedBoxes = []) {
             const boxes = JSON.parse(localStorage.getItem('custom_boxes') || '[]');
             const grid = document.getElementById('assignmentBoxGrid');
-            grid.innerHTML = boxes.map(box => `
+            const simpleGrid = document.getElementById('simpleAssignmentBoxGrid');
+            
+            const html = boxes.map(box => `
                 <div class="box-item ${selectedBoxes.includes(box) ? 'selected' : ''}" onclick="this.classList.toggle('selected')" data-box="${box}">
                     <div style="font-weight:500; font-size: 0.9rem;">${box}</div>
                 </div>
@@ -1360,39 +1520,61 @@
                     <div style="font-size: 1rem;">+</div>
                 </div>
             `;
+            
+            if (grid) grid.innerHTML = html;
+            if (simpleGrid) simpleGrid.innerHTML = html;
         }
 
         async function toggleStar(langCode) {
             if (!currentResultData || !currentResultData[langCode]) return;
             
             const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
-            const text = document.querySelector('.main-input').value.trim();
+            const searchText = document.querySelector('.main-input').value.trim();
             
-            // 唯一标识改为：原词 + 当前点击的语言
-            const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
+            // 唯一标识：原词 + 当前点击的语言
+            const idx = vocab.findIndex(v => v.originalText === searchText && v.lang === langCode);
+            
+            pendingStarAction = { langCode, searchText, vocabIndex: idx };
+            
+            // 填充预览数据
+            const langMap = { 'fr': '🇫🇷', 'en': '🇬🇧', 'zh': '🇨🇳' };
+            document.getElementById('previewLangFlag').innerText = langMap[langCode] || '🏳️';
+            
+            const content = currentResultData[langCode].content;
+            const extra = currentResultData[langCode].extra;
+            
+            document.getElementById('previewContent').innerText = content;
+            document.getElementById('previewExtra').innerText = extra;
             
             if (idx > -1) {
-                // 如果已经收藏了该语言模块，则打开归类面板或准备取消收藏
-                pendingStarAction = { langCode, text, vocabIndex: idx };
-                const currentBoxes = vocab[idx].boxes || [];
-                renderAssignmentBoxGrid(currentBoxes);
-                document.getElementById('boxAssignmentOverlay').style.display = 'flex';
+                // 已收藏，显示现有数据
+                const v = vocab[idx];
+                const t = v.translations[langCode] || {};
+                document.getElementById('previewContent').innerText = t.content || content;
+                document.getElementById('previewExtra').innerText = t.extra || extra;
+                document.getElementById('previewNote').innerHTML = t.note || searchText;
+                renderAssignmentBoxGrid(v.boxes || []);
             } else {
-                // 未收藏该语言模块，准备收藏
-                pendingStarAction = { langCode, text, vocabIndex: -1 };
+                // 未收藏，自动填充搜索词作为注释
+                document.getElementById('previewNote').innerHTML = `<b>${searchText}</b>`; // 默认加粗搜索词
                 renderAssignmentBoxGrid([]);
-                document.getElementById('boxAssignmentOverlay').style.display = 'flex';
             }
+            
+            document.getElementById('cardPreviewOverlay').style.display = 'flex';
         }
 
-        function closeBoxAssignment() {
-            document.getElementById('boxAssignmentOverlay').style.display = 'none';
+        function closeCardPreview() {
+            document.getElementById('cardPreviewOverlay').style.display = 'none';
             pendingStarAction = null;
         }
 
         async function saveBoxAssignment() {
             if (!pendingStarAction) return;
-            const { langCode, text, vocabIndex } = pendingStarAction;
+            const { langCode, searchText, vocabIndex } = pendingStarAction;
+            
+            const content = document.getElementById('previewContent').innerText.trim();
+            const extra = document.getElementById('previewExtra').innerText.trim();
+            const note = document.getElementById('previewNote').innerHTML.trim();
             const selectedBoxes = Array.from(document.querySelectorAll('#assignmentBoxGrid .box-item.selected')).map(el => el.getAttribute('data-box'));
             
             const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
@@ -1401,14 +1583,13 @@
             if (selectedBoxes.length === 0 && vocabIndex > -1) {
                 // 取消收藏
                 vocab.splice(vocabIndex, 1);
-                btn.classList.remove('active');
+                if (btn) btn.classList.remove('active');
             } else if (selectedBoxes.length > 0) {
-                // 仅保存当前语言的数据（独立收藏逻辑）
                 const translations = {};
                 translations[langCode] = {
-                    content: currentResultData[langCode].content,
-                    extra: currentResultData[langCode].extra,
-                    note: text // 核心逻辑：自动将当时主搜索框内输入的查询内容填充到这一栏作为注释
+                    content: content,
+                    extra: extra,
+                    note: note
                 };
 
                 if (vocabIndex > -1) {
@@ -1418,18 +1599,28 @@
                 } else {
                     // 新增收藏
                     vocab.push({
-                        originalText: currentResultData[langCode].content, 
+                        originalText: searchText, 
                         lang: langCode,
                         translations: translations,
                         boxes: selectedBoxes,
                         timestamp: new Date().toISOString()
                     });
                 }
-                btn.classList.add('active');
+                if (btn) btn.classList.add('active');
             }
 
             localStorage.setItem('my_vocabulary', JSON.stringify(vocab));
             syncToCloud();
+            closeCardPreview();
+            showToast(selectedBoxes.length > 0 ? '已收藏到卡片盒' : '已取消收藏');
+        }
+
+        function closeBoxAssignment() {
+            document.getElementById('boxAssignmentOverlay').style.display = 'none';
+            pendingStarAction = null;
+        }
+
+        async function saveSimpleBoxAssignment() {
             closeBoxAssignment();
         }
 
@@ -1788,7 +1979,7 @@
                 if (!vocab[vIdx].translations) vocab[vIdx].translations = {};
                 if (!vocab[vIdx].translations[lang]) vocab[vIdx].translations[lang] = {};
                 
-                const val = el.innerText.trim();
+                const val = type === 'note' ? el.innerHTML : el.innerText.trim();
                 if (type === 'content') vocab[vIdx].translations[lang].content = val;
                 else if (type === 'extra') vocab[vIdx].translations[lang].extra = val;
                 else if (type === 'note') vocab[vIdx].translations[lang].note = val;
@@ -1925,6 +2116,17 @@
             const selector = group === 'pos' ? '[data-pos]' : '[data-lang]';
             document.querySelectorAll(`.tag-btn${selector}`).forEach(b => b.classList.remove('active'));
             if (!wasActive) btn.classList.add('active');
+            
+            // 修复词性筛选图标高亮逻辑
+            if (group === 'pos') {
+                const posBtn = document.getElementById('posToggleBtn');
+                const anyPosActive = document.querySelector('.tag-btn[data-pos].active');
+                if (anyPosActive) {
+                    posBtn.classList.add('active');
+                } else {
+                    posBtn.classList.remove('active');
+                }
+            }
         }
 
         async function handleSearch(text) {
@@ -1963,14 +2165,15 @@
 1. 识别输入类型：word（单词）、phrase（短语）或 sentence（句子）。
 2. 如果是 word：
    - 必须严格遵守“强制词性限定”和“输入源语言限定”。
-   - 返回翻译内容，附带极简信息（音标、词性、法语阴阳性/单复数）。
-   - 法语名词/形容词必须显示性数变化，例如：suffisant, e; traducteur, trice。
+   - 如果强制词性为动词 (v.)，则法语/英语翻译仅显示为及物动词 (v.t.) 或不及物动词 (v.i.)，且绝对不需要返回该词的阴阳性（féminin/masculin）或单复数（singulier/pluriel）信息。
+   - 对于其他词性，法语名词/形容词必须显示性数变化，例如：suffisant, e; traducteur, trice。
+   - 返回翻译内容，附带极简信息（音标、词性）。
    - 禁止返回例句、同反义词。
 3. 如果是 phrase：仅返回翻译内容。禁止返回例句、同反义词。
 4. 如果是 sentence：仅返回 Oral 语气的翻译内容。
 5. 如果输入是中文，zh 模块仅返回输入的中文词语本身，不带音标或额外按钮。
 6. 严格返回 JSON：{ "type": "word|phrase|sentence", "zh": {"content":"", "extra":""}, "en": {"content":"", "extra":""}, "fr": {"content":"", "extra":""} }
-补充信息格式：[音标] 词性 (m./f. pl.)`;
+补充信息格式：[音标] 词性 (只有在非动词时才显示 m./f. pl.)`;
 
             try {
                 const res = await fetch(`${url}/chat/completions`, {
