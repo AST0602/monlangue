@@ -1923,41 +1923,17 @@
                 renderReviewBoxOverlay();
                 document.getElementById('boxOverlay').style.display = 'flex';
             } else {
-                resetMainView();
-                // Ensure ALL possible overlays are hidden
-                const overlays = ['reviewView', 'boxOverlay', 'historyOverlay', 'modalOverlay', 'cardPreviewOverlay', 'boxAssignmentOverlay', 'manualAddOverlay'];
-                overlays.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.style.display = 'none';
-                });
-                
-                document.getElementById('mainView').style.display = 'block';
-                document.querySelector('.bottom-controls').style.display = 'flex';
-                
+                // 保存复习进度（如果需要）
                 if (reviewWords.length > 0) {
                     localStorage.setItem('review_checkpoint', JSON.stringify({
                         index: currentReviewIndex, words: reviewWords, timestamp: Date.now()
                     }));
                 }
+                // 直接刷新网页，彻底清理所有状态、阴影和遮罩层
+                window.location.reload();
             }
         }
 
-        function resetMainView() {
-            currentResultData = null;
-            const input = document.getElementById('searchInput');
-            if (input) {
-                input.value = '';
-                toggleClearBtn(input);
-                // Ensure focus is lost to prevent keyboard issues
-                input.blur();
-            }
-            // Re-init cards to clear results and star states
-            initResultCards();
-            // Scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            // Ensure container is visible
-            document.getElementById('mainView').style.display = 'block';
-        }
 
         function switchReviewView(mode) {
             const cardContainer = document.getElementById('cardViewContainer');
