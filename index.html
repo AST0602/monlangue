@@ -781,8 +781,10 @@
         }
 
         .card-note-box:empty::before {
-            content: "添加注释...";
+            content: "[点击添加注释...]";
             color: #C7C7CC;
+            font-style: normal;
+            opacity: 0.6;
         }
 
         .highlight-btn {
@@ -962,8 +964,10 @@
         }
 
         .preview-note:empty::before {
-            content: "添加注释...";
+            content: "[点击添加注释...]";
             color: #C7C7CC;
+            font-style: normal;
+            opacity: 0.6;
         }
 
         /* Underline editing interaction */
@@ -1920,9 +1924,16 @@
                 document.getElementById('boxOverlay').style.display = 'flex';
             } else {
                 resetMainView();
+                // Ensure ALL possible overlays are hidden
+                const overlays = ['reviewView', 'boxOverlay', 'historyOverlay', 'modalOverlay', 'cardPreviewOverlay', 'boxAssignmentOverlay', 'manualAddOverlay'];
+                overlays.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+                
                 document.getElementById('mainView').style.display = 'block';
-                document.getElementById('reviewView').style.display = 'none';
                 document.querySelector('.bottom-controls').style.display = 'flex';
+                
                 if (reviewWords.length > 0) {
                     localStorage.setItem('review_checkpoint', JSON.stringify({
                         index: currentReviewIndex, words: reviewWords, timestamp: Date.now()
@@ -1937,11 +1948,15 @@
             if (input) {
                 input.value = '';
                 toggleClearBtn(input);
+                // Ensure focus is lost to prevent keyboard issues
+                input.blur();
             }
             // Re-init cards to clear results and star states
             initResultCards();
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Ensure container is visible
+            document.getElementById('mainView').style.display = 'block';
         }
 
         function switchReviewView(mode) {
@@ -1991,7 +2006,7 @@
                                     <div class="card-title-inline" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'content', this)">${t.content}</div>
                                     ${!isSentence ? `<div class="card-phonetic-inline" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'extra', this)">${t.extra || ''}</div>` : ''}
                                 </div>
-                                <div class="card-note-box" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'note', this)">${t.note || ''}</div>
+                                <div class="card-note-box" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'note', this)">${t.note ? t.note : ''}</div>
                             </div>
                         `;
                     });
@@ -2004,6 +2019,7 @@
                                 <div class="card-title-inline" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'content', this)">${word.translatedText}</div>
                                 <div class="card-phonetic-inline" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'extra', this)">${word.extraInfo || ''}</div>
                             </div>
+                            <div class="card-note-box" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'note', this)"></div>
                         </div>
                     `;
                 }
@@ -2112,7 +2128,7 @@
                                 <div class="card-title-inline">${t.content}</div>
                                 ${!isSentence ? `<div class="card-phonetic-inline">${t.extra || ''}</div>` : ''}
                             </div>
-                            ${t.note ? `<div class="card-note-box">${t.note}</div>` : ''}
+                            <div class="card-note-box">${t.note ? t.note : ''}</div>
                         </div>
                     `;
                 });
@@ -2186,6 +2202,10 @@
         async function handleSearch(text) {
             // 收起键盘
             document.activeElement.blur();
+            
+            // Ensure results grid is visible and main view is active
+            document.getElementById('mainView').style.display = 'block';
+            document.getElementById('resultsGrid').style.display = 'flex';
 
             const key = localStorage.getItem('ai_api_key');
             const url = localStorage.getItem('ai_base_url');
