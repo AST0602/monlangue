@@ -220,7 +220,7 @@
 
         .main-input {
             width: 100%;
-            padding: 20px 60px 20px 24px;
+            padding: 20px 54px 20px 24px;
             font-size: 1.1rem;
             border: none;
             border-radius: 20px;
@@ -240,38 +240,9 @@
             box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
         }
 
-        .mic-icon {
-            position: absolute;
-            right: 24px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            opacity: 0.6;
-            transition: var(--transition);
-        }
-
-        .mic-icon:hover {
-            opacity: 1;
-        }
-
-        .mic-icon.active {
-            color: #FF3B30;
-            opacity: 1;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: translateY(-50%) scale(1); }
-            50% { transform: translateY(-50%) scale(1.2); }
-            100% { transform: translateY(-50%) scale(1); }
-        }
-
         .clear-icon {
             position: absolute;
-            right: 54px;
+            right: 24px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-secondary);
@@ -284,6 +255,71 @@
 
         .clear-icon:hover {
             opacity: 0.8;
+        }
+
+        /* POS Filter Menu */
+        .pos-filter-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .pos-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #E8E8ED;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }
+
+        .pos-toggle-btn.active {
+            background: var(--text-primary);
+            color: white;
+        }
+
+        .pos-panel {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 8px;
+            background: var(--card-color);
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            z-index: 100;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 120px;
+        }
+
+        .pos-panel.show {
+            display: flex;
+        }
+
+        .pos-panel .tag-btn {
+            padding: 8px 16px;
+            text-align: left;
+            width: 100%;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-primary);
+        }
+
+        .pos-panel .tag-btn.active {
+            background: #F2F2F7;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .pos-panel .tag-btn:hover:not(.active) {
+            background: #F9F9FB;
         }
 
         /* History Overlay */
@@ -448,24 +484,58 @@
         .box-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            gap: 12px;
             width: 100%;
-            max-width: 400px;
-            margin-top: 40px;
+            max-width: 440px;
+            margin-top: 24px;
         }
 
         .box-item {
-            padding: 24px;
-            border: 2px solid #E8E8ED;
-            border-radius: 20px;
+            padding: 12px 16px;
+            border: 1.5px solid #E8E8ED;
+            border-radius: 14px;
             text-align: center;
             cursor: pointer;
             transition: var(--transition);
+            position: relative;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .box-item.selected {
             border-color: var(--text-primary);
             background: #F5F5F7;
+        }
+
+        .box-item .delete-box {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 22px;
+            height: 22px;
+            background: var(--text-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            opacity: 0;
+            transition: var(--transition);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        .box-item:hover .delete-box {
+            opacity: 1;
+        }
+
+        .box-item .delete-box:hover {
+            transform: scale(1.1);
+            background: #FF3B30;
         }
         .mode-tags {
             display: flex;
@@ -811,10 +881,18 @@
 
             <nav class="mode-tags" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; gap: 8px;">
-                    <div style="display: flex; gap: 4px; padding-right: 8px; border-right: 1px solid #E8E8ED;">
-                        <button class="tag-btn" onclick="toggleTag(this, 'pos')" data-pos="v.">v.</button>
-                        <button class="tag-btn" onclick="toggleTag(this, 'pos')" data-pos="n.">n.</button>
-                        <button class="tag-btn" onclick="toggleTag(this, 'pos')" data-pos="adj.">adj.</button>
+                    <div class="pos-filter-container">
+                        <button class="pos-toggle-btn" id="posToggleBtn" onclick="togglePosPanel(event)">
+                            <span>词性筛选</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </button>
+                        <div class="pos-panel" id="posPanel">
+                            <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="v.">v. 动词</button>
+                            <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="n.">n. 名词</button>
+                            <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="adj.">adj. 形容词</button>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 4px;">
                         <button class="tag-btn" onclick="toggleTag(this, 'lang')" data-lang="FR">FR</button>
@@ -840,15 +918,6 @@
                         </svg>
                     </div>
                 </header>
-        </div>
-
-        <div class="floating-mic" id="micBtn">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
         </div>
 
         <!-- History Overlay -->
@@ -1047,9 +1116,6 @@
         let currentResultData = null;
         let reviewWords = [];
         let currentReviewIndex = 0;
-        let recognition = null;
-        let isListening = false;
-        let micTimer = null;
         let pendingStarAction = null; // Store data when opening box assignment modal
 
         window.onload = () => {
@@ -1058,8 +1124,6 @@
             checkResumeReview();
             renderHistory();
             setupHighlightListener();
-            initSpeechRecognition();
-            setupMicLongPress();
             initCustomBoxes();
             // 启动时自动同步一次
             setTimeout(manualSync, 1000);
@@ -1067,6 +1131,24 @@
                 navigator.serviceWorker.register('./service-worker.js');
             }
         };
+
+        function togglePosPanel(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('posPanel');
+            const btn = document.getElementById('posToggleBtn');
+            panel.classList.toggle('show');
+            btn.classList.toggle('active');
+            
+            // 点击外部关闭
+            if (panel.classList.contains('show')) {
+                const closeHandler = () => {
+                    panel.classList.remove('show');
+                    btn.classList.remove('active');
+                    document.removeEventListener('click', closeHandler);
+                };
+                setTimeout(() => document.addEventListener('click', closeHandler), 1);
+            }
+        }
 
         function toggleManualAdd(show) {
             const overlay = document.getElementById('manualAddOverlay');
@@ -1155,8 +1237,8 @@
             `;
             html += boxes.map(box => `
                 <div class="box-item" onclick="toggleBoxSelection(this)" data-box="${box}">
-                    <div style="font-weight:600; margin-bottom: 4px;">${box}</div>
-                    <div class="delete-box" onclick="deleteBox(event, '${box}')" style="font-size: 0.7rem; color: #FF3B30; opacity: 0.6;">删除</div>
+                    <div style="font-weight:600;">${box}</div>
+                    <div class="delete-box" onclick="deleteBox(event, '${box}')">×</div>
                 </div>
             `).join('');
             
@@ -1306,75 +1388,6 @@
             closeBoxAssignment();
         }
 
-        function initSpeechRecognition() {
-            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (window.SpeechRecognition) {
-                recognition = new window.SpeechRecognition();
-                recognition.continuous = false;
-                recognition.interimResults = false;
-                recognition.lang = 'zh-CN'; 
-
-                recognition.onstart = () => {
-                    isListening = true;
-                    document.getElementById('micBtn').classList.add('listening');
-                    showToast('正在录音...', false);
-                };
-
-                recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript;
-                    const input = document.querySelector('.main-input');
-                    input.value = transcript;
-                    toggleClearBtn(input);
-                    handleSearch(transcript);
-                };
-
-                recognition.onerror = (event) => {
-                    console.error('Speech recognition error', event.error);
-                    if (event.error !== 'no-speech') {
-                        showToast('语音识别错误: ' + event.error, true);
-                    }
-                    stopListening();
-                };
-
-                recognition.onend = () => {
-                    stopListening();
-                };
-            }
-        }
-
-        function setupMicLongPress() {
-            const micBtn = document.getElementById('micBtn');
-            
-            const startHandler = (e) => {
-                e.preventDefault();
-                if (!recognition) {
-                    showToast('您的浏览器不支持语音识别', true);
-                    return;
-                }
-                if (!isListening) {
-                    recognition.start();
-                }
-            };
-
-            const endHandler = (e) => {
-                e.preventDefault();
-                if (isListening) {
-                    recognition.stop();
-                }
-            };
-
-            micBtn.addEventListener('mousedown', startHandler);
-            micBtn.addEventListener('mouseup', endHandler);
-            micBtn.addEventListener('touchstart', startHandler);
-            micBtn.addEventListener('touchend', endHandler);
-            micBtn.addEventListener('mouseleave', endHandler);
-        }
-
-        function stopListening() {
-            isListening = false;
-            document.getElementById('micBtn').classList.remove('listening');
-        }
-
         // Highlight Logic
         function setupHighlightListener() {
             document.addEventListener('mouseup', () => {
@@ -1517,7 +1530,7 @@
                             </svg>
                         </button>
                     </div>
-                    <div class="card-content" contenteditable="true" onclick="event.stopPropagation()">等待输入...</div>
+                    <div class="card-content" contenteditable="false" onclick="event.stopPropagation()">等待输入...</div>
                     <div class="secondary-content" id="secondary-${lang.code}" onclick="event.stopPropagation()"></div>
                     <div class="card-actions" id="actions-${lang.code}" onclick="event.stopPropagation()"></div>
                 </article>
@@ -1957,7 +1970,8 @@
                                 buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'syn.')">syn.</button>`;
                                 buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'ant.')">ant.</button>`;
                                 buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'ex:')">ex:</button>`;
-                            } else if (inputType === 'sentence') {
+                            } else if (inputType === 'sentence' && lang.code !== 'en') {
+                                // 英语卡片精简，不显示语气选项
                                 buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Formel')">Formel</button>`;
                                 buttons += `<button class="action-btn" onclick="handleSecondarySearch('${lang.code}', 'tone', 'Standard')">Standard</button>`;
                             }
