@@ -260,18 +260,16 @@
         /* POS Filter Menu */
         .pos-filter-container {
             position: relative;
-            margin-bottom: 20px;
         }
 
         .pos-toggle-btn {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
             background: #E8E8ED;
-            border-radius: 100px;
-            font-size: 0.85rem;
-            font-weight: 600;
+            border-radius: 50%;
             color: var(--text-secondary);
             cursor: pointer;
             transition: var(--transition);
@@ -304,22 +302,50 @@
         }
 
         .pos-panel .tag-btn {
-            padding: 8px 16px;
+            padding: 8px 12px;
             text-align: left;
             width: 100%;
             border-radius: 8px;
             background: transparent;
             color: var(--text-primary);
+            font-size: 0.85rem;
         }
 
         .pos-panel .tag-btn.active {
             background: #F2F2F7;
-            color: var(--text-primary);
             font-weight: 600;
         }
 
         .pos-panel .tag-btn:hover:not(.active) {
             background: #F9F9FB;
+        }
+
+        .lang-flag-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #E8E8ED;
+            font-size: 1.1rem;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .lang-flag-btn.active {
+            border-color: var(--text-primary);
+            background: var(--card-color);
+        }
+
+        .lang-label {
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
         }
 
         /* History Overlay */
@@ -352,10 +378,10 @@
 
         .history-item {
             background: var(--card-color);
-            padding: 20px;
-            border-radius: 20px;
+            padding: 12px 16px;
+            border-radius: 16px;
             box-shadow: var(--shadow);
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: var(--text-primary);
             position: relative;
             cursor: pointer;
@@ -364,30 +390,32 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            min-height: 100px;
+            min-height: 60px;
             border: 1px solid rgba(0,0,0,0.03);
         }
 
         .history-item:hover {
             transform: scale(1.02);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
         }
 
         .history-item .delete-history {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 24px;
-            height: 24px;
+            top: -6px;
+            right: -6px;
+            width: 20px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: rgba(0,0,0,0.05);
-            color: var(--text-secondary);
-            font-size: 1.2rem;
+            background: var(--text-primary);
+            color: white;
+            font-size: 14px;
             opacity: 0;
             transition: var(--transition);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            z-index: 10;
         }
 
         .history-item:hover .delete-history {
@@ -397,12 +425,12 @@
         /* Result Cards */
         .result-card {
             background-color: var(--card-color);
-            padding: 20px 32px;
+            padding: 16px 24px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             position: relative;
             transition: var(--transition);
-            min-height: 60px;
+            min-height: 50px;
             overflow: hidden;
             cursor: pointer;
         }
@@ -413,18 +441,25 @@
             margin-top: 0;
             overflow: hidden;
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1.1rem;
+            line-height: 1.4;
         }
 
         .result-card.expanded .card-content {
             max-height: 1000px;
             opacity: 1;
-            margin-top: 12px;
+            margin-top: 8px;
         }
 
         .result-card .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 0;
+        }
+
+        .result-card.expanded .card-header {
+            margin-bottom: 8px;
         }
 
         /* Mic Button Outside */
@@ -883,9 +918,8 @@
                 <div style="display: flex; gap: 8px;">
                     <div class="pos-filter-container">
                         <button class="pos-toggle-btn" id="posToggleBtn" onclick="togglePosPanel(event)">
-                            <span>词性筛选</span>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m6 9 6 6 6-6"/>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                             </svg>
                         </button>
                         <div class="pos-panel" id="posPanel">
@@ -894,9 +928,13 @@
                             <button class="tag-btn" onclick="toggleTag(this, 'pos'); togglePosPanel(event)" data-pos="adj.">adj. 形容词</button>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="tag-btn" onclick="toggleTag(this, 'lang')" data-lang="FR">FR</button>
-                        <button class="tag-btn" onclick="toggleTag(this, 'lang')" data-lang="EN">EN</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="lang-flag-btn" onclick="toggleTag(this, 'lang')" data-lang="FR" title="法语优先">
+                            <span style="transform: scale(1.5);">🇫🇷</span>
+                        </button>
+                        <button class="lang-flag-btn" onclick="toggleTag(this, 'lang')" data-lang="EN" title="英语优先">
+                            <span style="transform: scale(1.5);">🇬🇧</span>
+                        </button>
                     </div>
                 </div>
                 <button class="icon-btn" onclick="toggleHistoryMenu()" style="padding: 6px; border-radius: 50%;" title="搜索历史">
@@ -1048,7 +1086,7 @@
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
-                    <span>手动添加</span>
+                    <span>添加卡片</span>
                 </button>
             </div>
             <div class="review-toggle" onclick="toggleReviewMode(true)">
@@ -1319,18 +1357,22 @@
 
         async function toggleStar(langCode) {
             if (!currentResultData || !currentResultData[langCode]) return;
+            
             const vocab = JSON.parse(localStorage.getItem('my_vocabulary') || '[]');
             const text = document.querySelector('.main-input').value.trim();
+            
+            // 唯一标识改为：原词 + 当前点击的语言
             const idx = vocab.findIndex(v => v.originalText === text && v.lang === langCode);
+            const btn = document.querySelector(`.result-card[data-lang-code="${langCode}"] .star-btn`);
             
             if (idx > -1) {
-                // Already starred, open assignment modal to edit or unstar
+                // 如果已经收藏了该语言模块，则打开归类面板或准备取消收藏
                 pendingStarAction = { langCode, text, vocabIndex: idx };
                 const currentBoxes = vocab[idx].boxes || [];
                 renderAssignmentBoxGrid(currentBoxes);
                 document.getElementById('boxAssignmentOverlay').style.display = 'flex';
             } else {
-                // Not starred, open assignment modal to star
+                // 未收藏该语言模块，准备收藏
                 pendingStarAction = { langCode, text, vocabIndex: -1 };
                 renderAssignmentBoxGrid([]);
                 document.getElementById('boxAssignmentOverlay').style.display = 'flex';
@@ -1342,7 +1384,7 @@
             pendingStarAction = null;
         }
 
-        function saveBoxAssignment() {
+        async function saveBoxAssignment() {
             if (!pendingStarAction) return;
             const { langCode, text, vocabIndex } = pendingStarAction;
             const selectedBoxes = Array.from(document.querySelectorAll('#assignmentBoxGrid .box-item.selected')).map(el => el.getAttribute('data-box'));
@@ -1351,27 +1393,23 @@
             const btn = document.querySelector(`.result-card[data-lang-code="${langCode}"] .star-btn`);
 
             if (selectedBoxes.length === 0 && vocabIndex > -1) {
-                // Unstar if no boxes selected and it was already starred
+                // 取消收藏
                 vocab.splice(vocabIndex, 1);
                 btn.classList.remove('active');
             } else if (selectedBoxes.length > 0) {
-                // 收集所有语言的翻译数据
+                // 仅保存当前语言的数据（独立收藏逻辑）
                 const translations = {};
-                enabledLanguages.forEach(l => {
-                    if (currentResultData[l.code]) {
-                        translations[l.code] = {
-                            content: currentResultData[l.code].content,
-                            extra: currentResultData[l.code].extra
-                        };
-                    }
-                });
+                translations[langCode] = {
+                    content: currentResultData[langCode].content,
+                    extra: currentResultData[langCode].extra
+                };
 
                 if (vocabIndex > -1) {
-                    // Update existing
+                    // 更新现有
                     vocab[vocabIndex].boxes = selectedBoxes;
-                    vocab[vocabIndex].translations = translations; 
+                    vocab[vocabIndex].translations = translations;
                 } else {
-                    // Add new
+                    // 新增收藏
                     vocab.push({
                         originalText: text, 
                         lang: langCode,
@@ -1677,36 +1715,33 @@
                 if (word.translations) {
                     Object.keys(word.translations).forEach(lang => {
                         const t = word.translations[lang];
-                        const styledExtra = (t.extra || '').replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
+                        // 移除这里的 styledExtra 转换，直接在 div 里编辑原始文本，显示时再处理
                         translationsHtml += `
                             <div class="translation-item" style="margin-top: 12px; border-bottom: 1px solid #F2F2F7; padding-bottom: 12px;">
                                 <div class="lang-label">${lang.toUpperCase()}</div>
                                 <div style="font-weight:600; margin-bottom: 4px;" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'content', this)">${t.content}</div>
-                                <div class="extra-info" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'extra', this)">${styledExtra}</div>
+                                <div class="extra-info" contenteditable="true" onblur="editCardContent(${index}, '${lang}', 'extra', this)">${t.extra || ''}</div>
                             </div>
                         `;
                     });
                 } else {
                     // 兼容旧数据
-                    const styledExtra = (word.extraInfo || '').replace(/(ex\.|v\.|adj\.|syn\.|ant\.)/g, '<span>$1</span>');
                     translationsHtml = `
                         <div class="translation-item" style="margin-top: 12px;">
                             <div class="lang-label">${word.lang.toUpperCase()}</div>
                             <div style="font-weight:600; margin-bottom: 4px;" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'content', this)">${word.translatedText}</div>
-                            <div class="extra-info" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'extra', this)">${styledExtra}</div>
+                            <div class="extra-info" contenteditable="true" onblur="editCardContent(${index}, '${word.lang}', 'extra', this)">${word.extraInfo || ''}</div>
                         </div>
                     `;
                 }
 
                 return `
-                    <div class="result-card expanded" style="cursor: default;" data-review-index="${index}">
-                        <div class="card-header">
-                            <span class="lang-label" style="font-size: 1.2rem; color: var(--text-primary);">${word.originalText}</span>
-                            <button class="icon-btn" onclick="deleteCard(${index})" style="color: #FF3B30; padding: 4px;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
+                    <div class="result-card expanded" style="cursor: default; padding: 12px 20px;" data-review-index="${index}">
+                        <div class="card-header" style="margin-bottom: 4px;">
+                            <span class="lang-label" style="font-size: 1rem; color: var(--text-primary); text-transform: none;">${word.originalText}</span>
+                            <div class="delete-box" onclick="deleteCard(${index})" style="opacity: 1; position: static; width: 18px; height: 18px; font-size: 12px;">×</div>
                         </div>
-                        <div class="card-content" onclick="event.stopPropagation()">
+                        <div class="card-content" style="font-size: 0.95rem;" onclick="event.stopPropagation()">
                             ${translationsHtml}
                         </div>
                     </div>
